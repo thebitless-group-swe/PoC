@@ -1,0 +1,1 @@
+Proof of Concept per validare la pipeline LLM streaming end-to-end
