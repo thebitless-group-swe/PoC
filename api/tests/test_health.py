@@ -5,11 +5,6 @@ Verifica che:
 2. Il campo `model` rifletta il valore corrente di settings.litellm_model.
 3. Modifiche runtime al singleton settings vengano riflesse nella risposta
    (verifica indirettamente che la route non hardcodi il valore).
-
-Nota implementativa: lo scaffolding #4 di Edoardo usa `settings = Settings()`
-come singleton di modulo, non `@lru_cache(get_settings)`. Quindi i test
-usano `monkeypatch.setattr(settings, ...)` invece di `monkeypatch.setenv +
-get_settings.cache_clear()` come originariamente previsto dalla skill.
 """
 import pytest
 from fastapi.testclient import TestClient
@@ -38,12 +33,6 @@ class TestHealthEndpoint:
     def test_health_riflette_modifiche_runtime_settings(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Cambiando settings.litellm_model a runtime, la risposta si aggiorna.
-
-        Verifica che la route legga il valore dal singleton ad ogni richiesta,
-        senza hardcoding o caching locale. monkeypatch ripristina il valore
-        originale al termine del test.
-        """
         monkeypatch.setattr(settings, "litellm_model", "test-model-override")
 
         response = client.get("/")
@@ -61,10 +50,6 @@ class TestHealthEndpoint:
     def test_health_non_espone_api_key(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        """Anche con api_key impostata, non deve mai apparire nella risposta health.
-
-        Verifica V10 (isolamento credenziali) lato endpoint health.
-        """
         monkeypatch.setattr(settings, "litellm_api_key", "sk-segreto-non-leakare")
 
         response = client.get("/")
