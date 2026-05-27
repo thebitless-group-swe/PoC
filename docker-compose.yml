@@ -22,20 +22,6 @@ services:
     networks:
       - second-brain-net
 
-  ollama:
-    image: ollama/ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    profiles:
-      - offline
-    networks:
-      - second-brain-net
-
 networks:
   second-brain-net:
     driver: bridge
-
-volumes:
-  ollama_data:
