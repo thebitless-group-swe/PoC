@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator
 import httpx
 
 from ..settings import Settings
+from .errors import LLMProviderError
 
 HTTP_TIMEOUT_SECONDS = 60.0
 SSE_DATA_PREFIX = "data:"
@@ -39,14 +40,21 @@ class LiteLLMClient(LLMClient):
             "messages": messages,
             "stream": True,
         }
-        async with self._client.stream(
-            "POST", "/chat/completions", json=payload
-        ) as response:
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                content = self._parse_sse_line(line)
-                if content is not None:
-                    yield content
+        try:
+            async with self._client.stream(
+                "POST", "/chat/completions", json=payload
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    content = self._parse_sse_line(line)
+                    if content is not None:
+                        yield content
+        except httpx.TimeoutException as exc:
+            raise LLMProviderError("Timeout nella richiesta al provider LLM") from exc
+        except httpx.HTTPStatusError as exc:
+            raise LLMProviderError(
+                f"Il provider LLM ha risposto con stato {exc.response.status_code}"
+            ) from exc
 
     @staticmethod
     def _parse_sse_line(line: str) -> str | None:
@@ -62,5 +70,8 @@ class LiteLLMClient(LLMClient):
         data = line[len(SSE_DATA_PREFIX) :].strip()
         if data == SSE_DONE_MARKER:
             return None
-        payload = json.loads(data)
-        return payload["choices"][0]["delta"].get("content")
+        try:
+            payload = json.loads(data)
+            return payload["choices"][0]["delta"].get("content")
+        except (json.JSONDecodeError, KeyError, IndexError, TypeError) as exc:
+            raise LLMProviderError("Risposta SSE malformata dal provider LLM") from exc

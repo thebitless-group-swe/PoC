@@ -9,8 +9,10 @@ import json
 from collections.abc import Callable
 
 import httpx
+import pytest
 
 from app.llm.client import HTTP_TIMEOUT_SECONDS, LiteLLMClient
+from app.llm.errors import LLMProviderError
 from app.settings import Settings
 
 MESSAGES = [{"role": "user", "content": "Riassumi questo testo."}]
@@ -88,4 +90,40 @@ async def test_stream_invia_payload_corretto() -> None:
         "messages": MESSAGES,
         "stream": True,
     }
+    await client.aclose()
+
+
+# --- #15 (POC-B-07): mapping errori -> LLMProviderError -------------------
+
+
+async def test_stream_mappa_timeout() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("troppo lento", request=request)
+
+    client = make_client(handler)
+    with pytest.raises(LLMProviderError):
+        _ = [chunk async for chunk in client.stream(MESSAGES)]
+    await client.aclose()
+
+
+async def test_stream_mappa_errore_5xx() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503, content=b"")
+
+    client = make_client(handler)
+    client._settings.litellm_api_key = "sk-chiave-segreta"
+    with pytest.raises(LLMProviderError) as exc_info:
+        _ = [chunk async for chunk in client.stream(MESSAGES)]
+    # Nessun leak della chiave API nel messaggio d'errore.
+    assert client._settings.litellm_api_key not in str(exc_info.value)
+    await client.aclose()
+
+
+async def test_stream_mappa_sse_malformata() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"data: {non-json}\n\n")
+
+    client = make_client(handler)
+    with pytest.raises(LLMProviderError):
+        _ = [chunk async for chunk in client.stream(MESSAGES)]
     await client.aclose()
