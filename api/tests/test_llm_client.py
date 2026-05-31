@@ -5,8 +5,25 @@ test tocca la rete reale. La fixture SSE (api/tests/fixtures/litellm_sse.txt)
 è una cattura reale dal gateway LiteLLM, usata per validare il parsing.
 """
 
+import json
+from collections.abc import Callable
+
+import httpx
+
 from app.llm.client import HTTP_TIMEOUT_SECONDS, LiteLLMClient
 from app.settings import Settings
+
+MESSAGES = [{"role": "user", "content": "Riassumi questo testo."}]
+
+
+def make_client(handler: Callable[[httpx.Request], httpx.Response]) -> LiteLLMClient:
+    """LiteLLMClient con trasporto httpx finto: le richieste non escono in rete."""
+    client = LiteLLMClient(Settings())
+    client._client = httpx.AsyncClient(
+        base_url=client._settings.litellm_base_url,
+        transport=httpx.MockTransport(handler),
+    )
+    return client
 
 
 # --- #13 (POC-B-05): __init__ e setup httpx -------------------------------
@@ -35,3 +52,40 @@ async def test_aclose_chiude_il_client() -> None:
     assert client._client.is_closed is False
     await client.aclose()
     assert client._client.is_closed is True
+
+
+# --- #14 (POC-B-06): stream() parsing SSE ---------------------------------
+
+
+async def test_stream_yielda_solo_delta_content(sse_chunks: str) -> None:
+    """Usa la fixture SSE reale: estrae i content, ignora finish chunk e [DONE]."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=sse_chunks.encode())
+
+    client = make_client(handler)
+    chunks = [chunk async for chunk in client.stream(MESSAGES)]
+
+    assert chunks == ["Ciao", " mondo", "\n"]
+    assert "".join(chunks) == "Ciao mondo\n"
+    await client.aclose()
+
+
+async def test_stream_invia_payload_corretto() -> None:
+    """Verifica model, messages e stream=true nel body della richiesta."""
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content)
+        return httpx.Response(200, content=b"data: [DONE]\n\n")
+
+    client = make_client(handler)
+    client._settings.litellm_model = "gemma3:1b"
+    _ = [chunk async for chunk in client.stream(MESSAGES)]
+
+    assert captured["payload"] == {
+        "model": "gemma3:1b",
+        "messages": MESSAGES,
+        "stream": True,
+    }
+    await client.aclose()
