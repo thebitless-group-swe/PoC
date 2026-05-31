@@ -3,6 +3,8 @@ import { useEditorStore } from '@/store/useEditorStore'
 
 export type LlmStreamStatus = 'idle' | 'streaming' | 'done' | 'error'
 
+const MIN_TEXT_LENGTH = 10
+
 /**
  * Azioni dello store di cui l'hook ha bisogno. Contratto minimo implementato
  * dalle slice dello store (streaming/errore). Disaccoppia l'hook dalla forma
@@ -35,8 +37,16 @@ export function useLlmStream(): LlmStreamHandle {
     setStatus('idle')
   }, [])
 
-  const start = useCallback(async (_text: string) => {
+  const start = useCallback(async (text: string) => {
     const actions = getActions()
+
+    // Pre-validazione: stessa soglia del backend (Field min_length=10).
+    if (text.trim().length < MIN_TEXT_LENGTH) {
+      actions.setError('Testo troppo corto')
+      setStatus('error')
+      return
+    }
+
     const controller = new AbortController()
     controllerRef.current = controller
 
