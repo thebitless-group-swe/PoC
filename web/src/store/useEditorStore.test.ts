@@ -1,9 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useEditorStore, useCurrentText } from './useEditorStore'
+import {
+  useEditorStore,
+  useCurrentText,
+  useStreamedOutput,
+  useIsGenerating,
+} from './useEditorStore'
 
 beforeEach(() => {
-  useEditorStore.setState({ currentText: '' })
+  useEditorStore.setState({
+    currentText: '',
+    streamedOutput: '',
+    isGenerating: false,
+  })
 })
 
 describe('useEditorStore', () => {
@@ -29,5 +38,53 @@ describe('useEditorStore', () => {
       result.current.reset()
     })
     expect(result.current.currentText).toBe('')
+  })
+})
+
+describe('useEditorStore — slice streaming', () => {
+  it('startStreaming inizializza: isGenerating a true, streamedOutput vuoto', () => {
+    const { result } = renderHook(() => useEditorStore())
+    // sporco lo stato per dimostrare che startStreaming azzera l'output
+    act(() => {
+      result.current.appendChunk('residuo precedente')
+    })
+    act(() => {
+      result.current.startStreaming()
+    })
+    expect(result.current.isGenerating).toBe(true)
+    expect(result.current.streamedOutput).toBe('')
+  })
+
+  it('finishStreaming spegne isGenerating', () => {
+    const { result } = renderHook(() => useEditorStore())
+    act(() => {
+      result.current.startStreaming()
+    })
+    act(() => {
+      result.current.finishStreaming()
+    })
+    expect(result.current.isGenerating).toBe(false)
+  })
+
+  it('appendChunk consecutivi concatenano senza perdere dati (callback form)', () => {
+    const { result } = renderHook(() => useEditorStore())
+    // due chiamate nello stesso act, senza re-render intermedio: la forma a
+    // callback legge sempre lo stato più recente, quindi nessun chunk va perso
+    act(() => {
+      result.current.appendChunk('a')
+      result.current.appendChunk('b')
+    })
+    expect(result.current.streamedOutput).toBe('ab')
+  })
+
+  it('useStreamedOutput e useIsGenerating riflettono lo stato corrente', () => {
+    const output = renderHook(() => useStreamedOutput())
+    const generating = renderHook(() => useIsGenerating())
+    act(() => {
+      useEditorStore.getState().startStreaming()
+      useEditorStore.getState().appendChunk('ciao')
+    })
+    expect(output.result.current).toBe('ciao')
+    expect(generating.result.current).toBe(true)
   })
 })
