@@ -5,6 +5,7 @@ import {
   useCurrentText,
   useStreamedOutput,
   useIsGenerating,
+  useErrorMessage,
 } from './useEditorStore'
 
 beforeEach(() => {
@@ -12,6 +13,7 @@ beforeEach(() => {
     currentText: '',
     streamedOutput: '',
     isGenerating: false,
+    errorMessage: null,
   })
 })
 
@@ -86,5 +88,38 @@ describe('useEditorStore — slice streaming', () => {
     })
     expect(output.result.current).toBe('ciao')
     expect(generating.result.current).toBe(true)
+  })
+})
+
+describe('useEditorStore — slice error', () => {
+  it('stato iniziale: errorMessage è null', () => {
+    const { result } = renderHook(() => useErrorMessage())
+    expect(result.current).toBeNull()
+  })
+
+  it('setError aggiorna il messaggio e spegne isGenerating', () => {
+    const { result } = renderHook(() => useEditorStore())
+    // simulo una generazione in corso che viene interrotta da un errore
+    act(() => {
+      result.current.startStreaming()
+    })
+    act(() => {
+      result.current.setError('Servizio temporaneamente non disponibile')
+    })
+    expect(result.current.errorMessage).toBe(
+      'Servizio temporaneamente non disponibile',
+    )
+    expect(result.current.isGenerating).toBe(false)
+  })
+
+  it('clearError riporta errorMessage a null', () => {
+    const { result } = renderHook(() => useEditorStore())
+    act(() => {
+      result.current.setError('errore qualsiasi')
+    })
+    act(() => {
+      result.current.clearError()
+    })
+    expect(result.current.errorMessage).toBeNull()
   })
 })
