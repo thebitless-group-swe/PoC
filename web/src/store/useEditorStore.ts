@@ -36,12 +36,3 @@ export const useCurrentText = () => useEditorStore((s) => s.currentText)
 export const useStreamedOutput = () => useEditorStore((s) => s.streamedOutput)
 export const useIsGenerating = () => useEditorStore((s) => s.isGenerating)
 export const useErrorMessage = () => useEditorStore((s) => s.errorMessage)
-
-// DEV-only: espone lo store su window per debug manuale dalla console.
-// Permette di settare currentText/streamedOutput senza un editor reale, utile
-// finché F-05 (Editor CodeMirror) non è implementato.
-// TODO: rimuovere all'avvio di POC-F-05.
-if (import.meta.env.DEV) {
-  // @ts-expect-error: hook globale solo in dev, non tipizzato di proposito
-  window.__editorStore = useEditorStore
-}
