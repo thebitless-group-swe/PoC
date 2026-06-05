@@ -37,3 +37,10 @@ pnpm install
 pnpm dev
 pnpm tsc --noEmit
 ```
+
+Rigenerare i tipi TypeScript dall'OpenAPI (richiede API in esecuzione su `localhost:8000`):
+
+```sh
+cd web
+pnpm types:gen
+```
