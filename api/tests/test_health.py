@@ -2,14 +2,14 @@
 
 Verifica che:
 1. La route ritorni shape {"status": "ok", "model": <str>}.
-2. Il campo `model` rifletta il valore corrente di settings.litellm_model.
+2. Il campo `model` rifletta il valore corrente di get_settings().litellm_model.
 3. Modifiche runtime al singleton settings vengano riflesse nella risposta
    (verifica indirettamente che la route non hardcodi il valore).
 """
 import pytest
 from fastapi.testclient import TestClient
 
-from app.settings import settings
+from app.settings import get_settings
 
 
 class TestHealthEndpoint:
@@ -24,16 +24,16 @@ class TestHealthEndpoint:
         assert body["status"] == "ok"
 
     def test_health_espone_modello_corrente(self, client: TestClient) -> None:
-        """Il campo `model` corrisponde a settings.litellm_model."""
+        """Il campo `model` corrisponde a get_settings().litellm_model."""
         response = client.get("/")
 
         body = response.json()
-        assert body["model"] == settings.litellm_model
+        assert body["model"] == get_settings().litellm_model
 
     def test_health_riflette_modifiche_runtime_settings(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr(settings, "litellm_model", "test-model-override")
+        monkeypatch.setattr(get_settings(), "litellm_model", "test-model-override")
 
         response = client.get("/")
 
@@ -50,7 +50,7 @@ class TestHealthEndpoint:
     def test_health_non_espone_api_key(
         self, client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        monkeypatch.setattr(settings, "litellm_api_key", "sk-segreto-non-leakare")
+        monkeypatch.setattr(get_settings(), "litellm_api_key", "sk-segreto-non-leakare")
 
         response = client.get("/")
 
