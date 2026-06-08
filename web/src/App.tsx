@@ -16,10 +16,10 @@ export default function App() {
         - ≥768px (md):      grid-cols-2 → Editor a sinistra, Preview a destra.
       */}
       <main className="flex-1 grid grid-cols-1 md:grid-cols-2">
-        <section className="border-b border-border md:border-b-0 md:border-r overflow-auto">
+        <section className="border-b border-border md:border-b-0 md:border-r overflow-auto min-w-0">
           <Editor />
         </section>
-        <section className="overflow-auto">
+        <section className="overflow-auto min-w-0">
           <Preview />
         </section>
       </main>
