@@ -5,7 +5,12 @@ import { parseSseStream } from '@/lib/sse'
 export type LlmStreamStatus = 'idle' | 'streaming' | 'done' | 'error'
 
 const MIN_TEXT_LENGTH = 10
-const SUMMARIZE_ENDPOINT = '/api/summarize'
+
+// Base URL assoluta del backend: la chiamata e cross-origin diretta su :8000
+// (motivo per cui esiste CORS_ORIGINS lato API). In assenza della variabile si
+// ricade su path relativo, utile nei test dove non c'e backend da contattare.
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+const SUMMARIZE_ENDPOINT = `${API_BASE_URL}/api/summarize`
 
 /**
  * Azioni dello store di cui l'hook ha bisogno. Contratto minimo implementato

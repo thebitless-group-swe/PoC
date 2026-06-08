@@ -107,7 +107,7 @@ describe('useLlmStream — fetch e stream (#32)', () => {
       await result.current.start(LONG_TEXT)
     })
     expect(fetchImpl).toHaveBeenCalledWith(
-      '/api/summarize',
+      expect.stringContaining('/api/summarize'),
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ text: LONG_TEXT }),
