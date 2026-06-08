@@ -13,7 +13,9 @@ function extractContent(data: string): string | null {
     const content = payload?.choices?.[0]?.delta?.content
     return typeof content === 'string' ? content : null
   } catch {
-    return null
+    // Il backend emette testo puro (non JSON OpenAI): il chunk SSE è
+    // già il contenuto da visualizzare. Restituiamo la stringa grezza.
+    return data.length > 0 ? data : null
   }
 }
 
@@ -33,9 +35,9 @@ export async function* parseSseStream(
   const DONE = Symbol('done')
 
   const handleLine = (raw: string): string | typeof DONE | null => {
-    const line = raw.replace(/\r$/, '').trim()
+    const line = raw.replace(/\r$/, '').trimStart()
     if (!line.startsWith(SSE_DATA_PREFIX)) return null
-    const data = line.slice(SSE_DATA_PREFIX.length).trim()
+    const data = line.slice(SSE_DATA_PREFIX.length).replace(/^ /, '')
     if (data === SSE_DONE_MARKER) return DONE
     return extractContent(data)
   }

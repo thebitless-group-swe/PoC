@@ -63,9 +63,9 @@ describe('parseSseStream', () => {
     expect(out).toEqual(['testo'])
   })
 
-  it('salta le righe con JSON malformato senza sollevare', async () => {
+  it('tratta le righe non-JSON come testo puro (formato backend)', async () => {
     const out = await collect(['data: {non-json}\n\n', line('ok')])
-    expect(out).toEqual(['ok'])
+    expect(out).toEqual(['{non-json}', 'ok'])
   })
 
   it('emette una riga finale priva di newline conclusiva', async () => {

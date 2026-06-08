@@ -212,3 +212,22 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* ── Typewriter cursor (V4) ──────────────────────────────────────────── */
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.typing-active p:last-child::after {
+  content: '▋';
+  display: inline-block;
+  margin-left: 2px;
+  animation: blink 1s step-start infinite;
+}
