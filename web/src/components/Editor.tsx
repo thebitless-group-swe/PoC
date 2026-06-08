@@ -45,6 +45,7 @@ export function Editor() {
         history(),
         markdown(),
         closeBrackets(),
+        EditorView.lineWrapping,
         search({ top: true }),
         keymap.of([
           ...defaultKeymap,
