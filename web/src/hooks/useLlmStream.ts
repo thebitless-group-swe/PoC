@@ -87,6 +87,7 @@ export function useLlmStream(
       } catch (error) {
         // L'abort dell'utente non e un errore: torna a idle senza alert.
         if (error instanceof DOMException && error.name === 'AbortError') {
+          actions.finishStreaming()
           setStatus('idle')
           return
         }
