@@ -5,13 +5,13 @@ from fastapi.responses import JSONResponse
 
 from .routes import summarize_router
 from .schemas import ErrorResponse
-from .settings import settings
+from .settings import get_settings
 
 app = FastAPI(title="Second Brain API — PoC")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
+    allow_origins=get_settings().cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -30,4 +30,4 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 
 @app.get("/")
 async def health() -> dict:
-    return {"status": "ok", "model": settings.litellm_model}
+    return {"status": "ok", "model": get_settings().litellm_model}
