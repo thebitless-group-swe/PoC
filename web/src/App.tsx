@@ -9,7 +9,7 @@ export default function App() {
       <header className="border-b border-border px-4 py-3">
         <AIPanel />
       </header>
-2
+      
       {/*
         Griglia responsive
         - <768px (default): grid-cols-1 → Editor sopra, Preview sotto.
