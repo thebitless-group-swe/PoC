@@ -49,6 +49,10 @@ class LiteLLMClient(LLMClient):
                     content = self._parse_sse_line(line)
                     if content is not None:
                         yield content
+        except httpx.ConnectError as exc:
+            raise LLMProviderError(
+                "Impossibile connettersi al provider LLM"
+            ) from exc
         except httpx.TimeoutException as exc:
             raise LLMProviderError("Timeout nella richiesta al provider LLM") from exc
         except httpx.HTTPStatusError as exc:
