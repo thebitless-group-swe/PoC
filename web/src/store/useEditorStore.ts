@@ -1,5 +1,16 @@
 import { create } from 'zustand'
 
+import type { Note } from '@/lib/fileSystem'
+
+// SC-FS: slice note. La struttura è pronta per la persistenza su localStorage,
+// NON ancora attiva: gli stub non leggono né scrivono nulla.
+export interface NotesSlice {
+  list: Note[]
+  currentId: string | null
+  createEmpty: () => void
+  select: (id: string) => void
+}
+
 // V4: layout dell'area di lavoro — solo editor, solo render, o affiancati.
 export type ViewMode = 'editor' | 'render' | 'split'
 // V4: quale modale AI è aperta (null = nessuna).
@@ -29,6 +40,7 @@ interface EditorState {
   setAiModal: (modal: AiModal) => void
   outputDraft: OutputDraft
   insertOutputIntoNote: () => void
+  notes: NotesSlice
 }
 
 export const useEditorStore = create<EditorState>((set) => ({
@@ -53,6 +65,16 @@ export const useEditorStore = create<EditorState>((set) => ({
   outputDraft: { text: '', status: 'idle' },
   insertOutputIntoNote: () => {
     // TODO: F-05
+  },
+  notes: {
+    list: [],
+    currentId: null,
+    createEmpty: () => {
+      // TODO: SC-FS — crea nota vuota + persistenza localStorage (non attiva)
+    },
+    select: (_id) => {
+      // TODO: SC-FS — seleziona nota (non attiva)
+    },
   },
 }))
 
