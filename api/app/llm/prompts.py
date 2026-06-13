@@ -1,9 +1,9 @@
-from typing import Literal
+from ..schemas import Length
 
+# Manteniamo il nome storico come alias dell'unica fonte di verita' (schemas.Length).
+SummaryLength = Length
 
-SummaryLength = Literal["breve", "medio", "dettagliato"]
-
-LENGTH_INSTRUCTIONS: dict[SummaryLength, str] = {
+LENGTH_INSTRUCTIONS: dict[Length, str] = {
     "breve": "1-2 frasi che catturino solo l'idea centrale del testo.",
     "medio": "3-5 frasi che coprano l'idea centrale e i principali concetti di supporto.",
     "dettagliato": "6-10 frasi che esprimano l'idea centrale, i concetti principali e i dettagli rilevanti, mantenendo comunque concisione.",
@@ -34,10 +34,14 @@ SUMMARIZE_SYSTEM_PROMPT = """\
 
 def build_summarize_messages(
         text: str,
-        length: SummaryLength="medio",
+        length: Length="medio",
 ) -> list[dict]:
     system_content = SUMMARIZE_SYSTEM_PROMPT.format(length_instruction = LENGTH_INSTRUCTIONS[length])
     return [
         {"role": "system", "content": system_content},
         {"role": "user", "content": text},
     ]
+
+
+def build_generate_messages(prompt: str, length: Length) -> list[dict]:
+    raise NotImplementedError  # TODO: B-02
