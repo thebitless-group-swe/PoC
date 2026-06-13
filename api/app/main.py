@@ -3,7 +3,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from .routes import summarize_router
+from .routes import generate_link_router, generate_router, summarize_router
 from .schemas import ErrorResponse
 from .settings import get_settings
 
@@ -18,6 +18,8 @@ app.add_middleware(
 )
 
 app.include_router(summarize_router)
+app.include_router(generate_router)
+app.include_router(generate_link_router)
 
 
 @app.exception_handler(HTTPException)

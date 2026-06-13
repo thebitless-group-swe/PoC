@@ -7,3 +7,15 @@ def test_health(client: TestClient) -> None:
     body = response.json()
     assert body["status"] == "ok"
     assert "model" in body
+
+
+def test_generate_stub_501(client: TestClient) -> None:
+    response = client.post("/api/generate", json={"prompt": "ciao"})
+    assert response.status_code == 501
+
+
+def test_generate_from_link_stub_501(client: TestClient) -> None:
+    response = client.post(
+        "/api/generate-from-link", json={"url": "https://example.com"}
+    )
+    assert response.status_code == 501
