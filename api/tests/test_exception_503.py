@@ -18,7 +18,7 @@ from app.llm import get_llm_client
 from app.llm.client import LLMClient
 from app.llm.errors import LLMProviderError
 from app.main import app
-from app.settings import settings
+from app.settings import get_settings
 
 #Valore fittizio e riconoscibile: se comparisse nella response sarebbe un leak.
 SENTINEL_API_KEY = "sk-SECRET-SENTINEL-12345"
@@ -50,7 +50,8 @@ class TestLLMProviderError503:
         app.dependency_overrides[get_llm_client] = lambda: DummyErrorLLMClient()
         #Configura una api_key sentinella NON vuota: il default "" renderebbe
         #inutile il test di no-leak ("" e' sottostringa di qualunque stringa).
-        monkeypatch.setattr(settings, "litellm_api_key", SENTINEL_API_KEY)
+        #get_settings() e' lru_cache: ritorna il singleton usato dall'app.
+        monkeypatch.setattr(get_settings(), "litellm_api_key", SENTINEL_API_KEY)
         yield
         app.dependency_overrides.clear()
 
