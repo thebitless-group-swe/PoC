@@ -130,3 +130,14 @@ export interface operations {
         };
     };
 }
+
+// provvisori, sostituiti da SA-02 (openapi-typescript)
+export type GenerateRequest = {
+    prompt: string;
+    length: "breve" | "medio" | "dettagliato";
+};
+
+export type LinkRequest = {
+    url: string;
+    length: "breve" | "medio" | "dettagliato";
+};
