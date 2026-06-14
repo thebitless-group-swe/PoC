@@ -5,9 +5,11 @@ import type { Note } from '../lib/fileSystem'
 type NotesState = {
   list: Note[]
   currentId: string | null
-  createEmpty: () => void
+  createEmpty: () => Note
   select: (id: string) => void
   updateCurrent: (patch: Partial<Pick<Note, 'title' | 'content'>>) => void
+  deleteNote: (id: string) => void
+  loadNote: (note: Omit<Note, 'createdAt' | 'updatedAt'> & { createdAt?: number; updatedAt?: number }) => void
 }
 
 export const useNotesStore = create<NotesState>()(
@@ -16,15 +18,18 @@ export const useNotesStore = create<NotesState>()(
       list: [],
       currentId: null,
 
-      createEmpty() {
-        const note: Note = {
-          id: crypto.randomUUID(),
-          title: 'Untitled',
-          content: '',
-          updatedAt: Date.now(),
-        }
-        set((s) => ({ list: [...s.list, note], currentId: note.id }))
-      },
+      createEmpty: () => {
+  const now = Date.now()
+  const note: Note = {
+    id: crypto.randomUUID(),
+    title: 'Senza titolo',
+    content: '',
+    createdAt: now,
+    updatedAt: now,
+  }
+  set((s) => ({ list: [...s.list, note], currentId: note.id }))
+  return note
+},
 
       select(id: string) {
         set({ currentId: id })
@@ -41,6 +46,33 @@ export const useNotesStore = create<NotesState>()(
           ),
         })
       },
+      deleteNote: (id: string) => {
+  const { list, currentId } = get()
+  const newList = list.filter((note) => note.id !== id)
+  let newCurrentId = currentId
+  if (currentId === id) {
+    newCurrentId = newList[0]?.id ?? null
+  }
+  set({ list: newList, currentId: newCurrentId })
+},
+
+loadNote: (noteData) => {
+  const now = Date.now()
+  const note: Note = {
+    id: noteData.id,
+    title: noteData.title,
+    content: noteData.content,
+    createdAt: noteData.createdAt ?? now,
+    updatedAt: noteData.updatedAt ?? now,
+  }
+  set((s) => {
+    const exists = s.list.some((n) => n.id === note.id)
+    const newList = exists
+      ? s.list.map((n) => (n.id === note.id ? note : n))
+      : [...s.list, note]
+    return { list: newList, currentId: note.id }
+  })
+},
     }),
     { name: 'notes_persistence' }
   )
