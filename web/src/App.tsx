@@ -2,6 +2,7 @@ import { Editor } from '@/components/Editor'
 import { EditorToolbar } from '@/components/EditorToolbar'
 import { Preview } from '@/components/Preview'
 import { Sidebar } from '@/components/Sidebar'
+import { SummarizeModal } from '@/components/SummarizeModal'
 import { TopBar } from '@/components/TopBar'
 
 export default function App() {
@@ -29,6 +30,8 @@ export default function App() {
           </section>
         </main>
       </div>
+
+      <SummarizeModal />
     </div>
   )
 }
