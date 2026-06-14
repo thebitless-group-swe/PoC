@@ -6,6 +6,7 @@ import {
   useErrorMessage,
   useIsGenerating,
 } from '@/store/useEditorStore'
+import { ViewToggle } from '@/components/ViewToggle'
 
 export interface AIPanelProps {
   isGenerating: boolean
@@ -22,6 +23,12 @@ export function AIPanelUI({
 }: AIPanelProps) {
   return (
     <div className="flex flex-col gap-3">
+      {/* 2. Contenitore principale diviso in due (sinistra e destra) */}
+      <div className="flex items-center justify-between gap-4">
+        
+        {/* 3. A sinistra inseriamo i bottoni per cambiare la vista */}
+        <ViewToggle />
+
       <div className="flex items-center gap-2">
         <Button
           type="button"
@@ -54,6 +61,7 @@ export function AIPanelUI({
           />
         )}
       </div>
+    </div>
 
       <div aria-live="polite">
         {errorMessage && (
