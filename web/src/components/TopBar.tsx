@@ -10,7 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useLlmStream } from '@/hooks/useLlmStream'
 import {
+  useAiModal,
   useCurrentText,
+  useEditorStore,
   useErrorMessage,
   useIsGenerating,
 } from '@/store/useEditorStore'
@@ -42,8 +44,17 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
   const isGenerating = useIsGenerating()
   const errorMessage = useErrorMessage()
   const currentText = useCurrentText()
+  const aiModal = useAiModal()
+  const showStreamingUi = isGenerating && aiModal === null
 
   const onRun = () => start(currentText)
+  const onSummarize = () => {
+    useEditorStore.setState({
+      streamedOutput: '',
+      errorMessage: null,
+      aiModal: 'summarize',
+    })
+  }
 
   return (
     <header className="flex flex-col gap-2 border-b border-border bg-background px-4 py-3">
@@ -75,7 +86,7 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
             type="button"
             size="sm"
             variant="secondary"
-            onClick={onRun}
+            onClick={onSummarize}
             disabled={isGenerating}
             aria-disabled={isGenerating}
             aria-label="Riassumi"
@@ -99,7 +110,7 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
             </Button>
           ))}
 
-          {isGenerating && (
+          {showStreamingUi && (
             <Button
               type="button"
               variant="destructive"
@@ -111,7 +122,7 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
             </Button>
           )}
 
-          {isGenerating && (
+          {showStreamingUi && (
             <span
               role="status"
               aria-label="Generazione in corso"
@@ -122,7 +133,7 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
       </div>
 
       <div aria-live="polite">
-        {errorMessage && (
+        {errorMessage && aiModal === null && (
           <Alert variant="destructive">
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>

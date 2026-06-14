@@ -43,7 +43,7 @@ interface EditorState {
   notes: NotesSlice
 }
 
-export const useEditorStore = create<EditorState>((set) => ({
+export const useEditorStore = create<EditorState>((set, get) => ({
   currentText: '',
   setCurrentText: (text) => set({ currentText: text }),
   reset: () => set({ currentText: '' }),
@@ -64,7 +64,12 @@ export const useEditorStore = create<EditorState>((set) => ({
   setAiModal: (modal) => set({ aiModal: modal }),
   outputDraft: { text: '', status: 'idle' },
   insertOutputIntoNote: () => {
-    // TODO: F-05
+    const summary = get().streamedOutput.trim()
+    if (!summary) return
+    set({
+      currentText: summary,
+      streamedOutput: '',
+    })
   },
   notes: {
     list: [],
