@@ -1,6 +1,7 @@
 import AIPanel from '@/components/AIPanel'
 import { Editor } from '@/components/Editor'
 import { Preview } from '@/components/Preview'
+import { Sidebar } from '@/components/Sidebar'
 
 export default function App() {
   return (
@@ -10,6 +11,8 @@ export default function App() {
         <AIPanel />
       </header>
       
+      <div className="flex flex-1">
+        <Sidebar />
       {/*
         Griglia responsive
         - <768px (default): grid-cols-1 → Editor sopra, Preview sotto.
@@ -23,6 +26,7 @@ export default function App() {
           <Preview />
         </section>
       </main>
+    </div>
     </div>
   )
 }
