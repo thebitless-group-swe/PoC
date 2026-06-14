@@ -69,8 +69,38 @@ export async function openNoteFromFile(): Promise<Note | null> {
 }
 
 /** Salva una nota su file (stub — implementato in FS-02) */
-export async function saveNoteToFile(_note: Note): Promise<void> {
-  throw new Error('not implemented')
+/** Salva una nota su file (showSaveFilePicker con fallback download) */
+export async function saveNoteToFile(note: Note): Promise<void> {
+  const fileName = `${note.title || 'nota'}.md`
+  const blob = new Blob([note.content], { type: 'text/markdown' })
+
+  if ('showSaveFilePicker' in window) {
+    try {
+      const fileHandle = await (window as any).showSaveFilePicker({
+        suggestedName: fileName,
+        types: [
+          {
+            description: 'Markdown',
+            accept: { 'text/markdown': ['.md'] },
+          },
+        ],
+      })
+      const writable = await fileHandle.createWritable()
+      await writable.write(blob)
+      await writable.close()
+    } catch (err: any) {
+      if (err.name === 'AbortError') return
+      throw err
+    }
+  } else {
+    // Fallback: download automatico
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = fileName
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 }
 
 /** Rinomina una nota (stub — implementato in FS-04) */
