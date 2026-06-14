@@ -103,7 +103,11 @@ export async function saveNoteToFile(note: Note): Promise<void> {
   }
 }
 
-/** Rinomina una nota (stub — implementato in FS-04) */
-export async function renameNote(_note: Note, _name: string): Promise<Note> {
-  throw new Error('not implemented')
+/** Rinomina una nota aggiornando il titolo (il nuovo nome verrà usato al prossimo salvataggio) */
+export async function renameNote(note: Note, name: string): Promise<Note> {
+  return {
+    ...note,
+    title: name.trim() || 'Senza titolo',
+    updatedAt: Date.now(),
+  }
 }
