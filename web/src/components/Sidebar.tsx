@@ -1,12 +1,24 @@
 import { useState } from 'react'
-import { useNotesList, useNotesStore, useCurrentNote } from '../store/notes'
-import { openNoteFromFile, saveNoteToFile, renameNote } from '../lib/fileSystem'
-import { useEditorStore } from '../store/useEditorStore'
+import { FileText, FolderOpen, Plus, Save } from 'lucide-react'
+
+import { cn } from '@/lib/utils'
+import { openNoteFromFile, renameNote, saveNoteToFile } from '@/lib/fileSystem'
+import { useCurrentNote, useNotesList, useNotesStore } from '@/store/notes'
+import { useEditorStore } from '@/store/useEditorStore'
+
+const actionButton = cn(
+  'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+)
 
 export function Sidebar() {
   const notes = useNotesList()
   const currentNote = useCurrentNote()
-  const { currentId, select, createEmpty, loadNote, updateCurrent } = useNotesStore()
+  const currentId = useNotesStore((s) => s.currentId)
+  const select = useNotesStore((s) => s.select)
+  const createEmpty = useNotesStore((s) => s.createEmpty)
+  const loadNote = useNotesStore((s) => s.loadNote)
+  const updateCurrent = useNotesStore((s) => s.updateCurrent)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
 
@@ -39,72 +51,107 @@ export function Sidebar() {
     if (currentId === note.id) {
       updateCurrent({ title: renamed.title })
     } else {
-      useNotesStore.getState().updateCurrent
-      // aggiorna direttamente tramite loadNote per note non correnti
       loadNote({ ...note, title: renamed.title, updatedAt: renamed.updatedAt })
     }
     setEditingId(null)
   }
 
   return (
-    <aside className="w-64 h-full flex flex-col border-r border-gray-200 bg-gray-50">
-      <div className="p-3 border-b border-gray-200 flex flex-col gap-2">
+    <aside
+      aria-label="Navigazione principale"
+      className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-card"
+    >
+      <div className="px-4 py-4">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          My Workspace
+        </p>
+      </div>
+
+      <div className="space-y-1 px-2">
         <button
+          type="button"
           onClick={createEmpty}
-          className="w-full px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded hover:bg-blue-700"
+          className={cn(actionButton, 'bg-primary text-primary-foreground hover:bg-primary/90')}
         >
-          + Nuova nota
+          <Plus className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">New Note</span>
         </button>
         <button
+          type="button"
           onClick={handleOpenFile}
-          className="w-full px-3 py-2 text-sm font-medium bg-white border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
+          className={cn(actionButton, 'text-foreground/80 hover:bg-muted hover:text-foreground')}
         >
-          Apri file…
+          <FolderOpen className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">Apri file…</span>
         </button>
         <button
+          type="button"
           onClick={handleSaveFile}
           disabled={!currentNote}
-          className="w-full px-3 py-2 text-sm font-medium bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40"
+          aria-disabled={!currentNote}
+          className={cn(
+            actionButton,
+            'text-foreground/80 hover:bg-muted hover:text-foreground',
+            'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/80',
+          )}
         >
-          Salva file
+          <Save className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">Salva file</span>
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <p className="px-3 py-2 text-xs font-semibold text-gray-400 uppercase">
+      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Note">
+        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           All Notes
         </p>
-        {notes.length === 0 && (
-          <p className="px-3 text-sm text-gray-400">Nessuna nota</p>
+        {notes.length === 0 ? (
+          <p className="px-3 py-2 text-sm text-muted-foreground">Nessuna nota</p>
+        ) : (
+          <ul className="space-y-1">
+            {notes.map((note) => {
+              const active = note.id === currentId
+              return (
+                <li key={note.id}>
+                  {editingId === note.id ? (
+                    <input
+                      autoFocus
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={() => commitRename(note)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename(note)
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      className={cn(
+                        'w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+                        'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      )}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(note.id)}
+                      onDoubleClick={() => startRename(note)}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                        'text-foreground/80 hover:bg-muted hover:text-foreground',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        active && 'bg-muted font-medium text-foreground',
+                      )}
+                    >
+                      <FileText className="size-4 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{note.title || 'Senza titolo'}</span>
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
         )}
-        {notes.map((note) =>
-          editingId === note.id ? (
-            <input
-              key={note.id}
-              autoFocus
-              value={editingTitle}
-              onChange={(e) => setEditingTitle(e.target.value)}
-              onBlur={() => commitRename(note)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitRename(note)
-                if (e.key === 'Escape') setEditingId(null)
-              }}
-              className="w-full px-3 py-2 text-sm border border-blue-400 outline-none bg-white"
-            />
-          ) : (
-            <button
-              key={note.id}
-              onClick={() => handleSelect(note.id)}
-              onDoubleClick={() => startRename(note)}
-              className={`w-full text-left px-3 py-2 text-sm truncate hover:bg-gray-100 ${
-                note.id === currentId ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-700'
-              }`}
-            >
-              {note.title || 'Senza titolo'}
-            </button>
-          )
-        )}
-      </div>
+      </nav>
     </aside>
   )
 }
+
+export default Sidebar
