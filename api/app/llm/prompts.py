@@ -32,6 +32,29 @@ SUMMARIZE_SYSTEM_PROMPT = """\
     Lunghezza richiesta: {length_instruction}
 """
 
+GENERATE_SYSTEM_PROMPT = """\
+    Sei un assistente esperto nella scrittura di testi in italiano. Il tuo
+    compito è generare un testo originale a partire dall'indicazione che
+    l'utente ti fornirà nel messaggio successivo.
+
+    Regole di contenuto:
+    - Genera contenuto pertinente e coerente con l'indicazione dell'utente,
+    senza discostarti dal tema richiesto.
+    - Mantieni un'esposizione accurata: non inventare fatti, dati numerici
+    o riferimenti che non siano verificabili o esplicitamente richiesti.
+    - Se l'indicazione è vaga o aperta, scegli un'interpretazione ragionevole
+    e mantienila coerente per tutto il testo.
+
+    Regole di forma:
+    - Scrivi il testo in italiano, indipendentemente dalla lingua
+    dell'indicazione di input.
+    - Usa prosa neutra, in terza persona, con registro discorsivo.
+    - Non aggiungere preamboli, titoli ridondanti, meta-commenti o frasi
+    del tipo "Ecco il testo generato". Restituisci direttamente il testo.
+
+    Lunghezza richiesta: {length_instruction}
+"""
+
 def build_summarize_messages(
         text: str,
         length: Length="medio",
@@ -43,5 +66,12 @@ def build_summarize_messages(
     ]
 
 
-def build_generate_messages(prompt: str, length: Length) -> list[dict]:
-    raise NotImplementedError  # TODO: B-02
+def build_generate_messages(
+        prompt: str, 
+        length: Length
+) -> list[dict]:
+    system_content = GENERATE_SYSTEM_PROMPT.format(length_instruction = LENGTH_INSTRUCTIONS[length])
+    return [
+        {"role": "system", "content": system_content},
+        {"role": "user", "content": prompt},
+    ]

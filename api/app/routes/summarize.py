@@ -28,7 +28,7 @@ async def summarize(
     #Depends permette di aspettare prima di chiamare la funzione desiderata
     client: LLMClient = Depends(get_llm_client),
 ) -> StreamingResponse:
-    messages = build_summarize_messages(payload.text)
+    messages = build_summarize_messages(payload.text, payload.length)
     stream = client.stream(messages)
 
     #Consumiamo il primo chunk QUI, prima di restituire StreamingResponse.

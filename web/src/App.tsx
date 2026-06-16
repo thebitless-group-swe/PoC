@@ -1,54 +1,65 @@
-import AIPanel from '@/components/AIPanel'
 import { Editor } from '@/components/Editor'
+import { EditorToolbar } from '@/components/EditorToolbar'
 import { Preview } from '@/components/Preview'
+import { Sidebar } from '@/components/Sidebar'
+import { SummarizeModal } from '@/components/SummarizeModal'
+import { TopBar } from '@/components/TopBar'
 import { useViewMode } from '@/store/useEditorStore'
 
 export default function App() {
   const viewMode = useViewMode()
+  const showEditor = viewMode === 'editor' || viewMode === 'split'
+  const showPreview = viewMode === 'render' || viewMode === 'split'
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Header full-width con i controlli di generazione */}
-      <header className="border-b border-border px-4 py-3">
-        <AIPanel />
-      </header>
-      
-      {/*
-        Griglia responsive
-        - <768px (default): grid-cols-1 → Editor sopra, Preview sotto.
-        - ≥768px (md):      grid-cols-2 → Editor a sinistra, Preview a destra.
-      */}
-      <main
-        className={
-          viewMode === 'split'
-            ? 'flex-1 grid grid-cols-1 md:grid-cols-2 min-h-0'
-            : 'flex-1 flex flex-col min-h-0'
-        }
-      >
-        {/* Mostra l'Editor se in modalità editor o split */}
-        {(viewMode === 'editor' || viewMode === 'split') && (
-          <section 
-            className={`overflow-auto min-w-0 ${
-              viewMode === 'split' 
-                ? 'border-b border-border md:border-b-0 md:border-r' 
-                : 'flex-1'
-            }`}
-          >
-            <Editor />
-          </section>
-        )}
+    <div className="flex h-screen bg-background text-foreground">
+      <Sidebar />
 
-        {/* Mostra la Preview se in modalità render o split */}
-        {(viewMode === 'render' || viewMode === 'split') && (
-          <section 
-            className={`overflow-auto min-w-0 ${
-              viewMode !== 'split' ? 'flex-1' : ''
-            }`}
-          >
-            <Preview />
-          </section>
-        )}
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <TopBar />
+
+        {/*
+          Layout in base alla vista selezionata (ViewToggle nella TopBar):
+          - split:        griglia responsive Editor | Preview
+          - editor/render: pannello singolo a tutta larghezza
+        */}
+        <main
+          className={
+            viewMode === 'split'
+              ? 'grid min-h-0 flex-1 grid-cols-1 md:grid-cols-2'
+              : 'flex min-h-0 flex-1 flex-col'
+          }
+        >
+          {showEditor && (
+            <section
+              className={
+                viewMode === 'split'
+                  ? 'flex min-w-0 flex-col overflow-hidden border-b border-border md:border-b-0 md:border-r'
+                  : 'flex min-w-0 flex-1 flex-col overflow-hidden'
+              }
+            >
+              <EditorToolbar />
+              <div className="min-h-0 flex-1 overflow-auto">
+                <Editor />
+              </div>
+            </section>
+          )}
+
+          {showPreview && (
+            <section
+              className={
+                viewMode === 'split'
+                  ? 'min-w-0 overflow-auto'
+                  : 'min-w-0 flex-1 overflow-auto'
+              }
+            >
+              <Preview />
+            </section>
+          )}
+        </main>
+      </div>
+
+      <SummarizeModal />
     </div>
   )
 }

@@ -60,6 +60,20 @@ export function Editor() {
          * undo, redo, drag, senza loop.
          */
         EditorView.updateListener.of((update) => {
+          if (update.selectionSet || update.docChanged) {
+            const mainSelection = update.state.selection.main
+            const selectedText = mainSelection.empty
+              ? ''
+              : update.state.sliceDoc(mainSelection.from, mainSelection.to)
+            
+            // Evita dispatch superflui se il testo selezionato è identico
+            const store = useEditorStore.getState()
+            if (store.selectedText !== selectedText) {
+              store.setSelectedText(selectedText)
+            }
+          }
+
+
           if (!update.docChanged) return
           const isOurSync = update.transactions.some(
             (tr) => tr.annotation(StoreSync) === true,

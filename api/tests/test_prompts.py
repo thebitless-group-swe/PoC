@@ -2,8 +2,10 @@ import pytest
 from app.llm.prompts import (
     LENGTH_INSTRUCTIONS,
     SUMMARIZE_SYSTEM_PROMPT,
+    GENERATE_SYSTEM_PROMPT,
     SummaryLength,
     build_summarize_messages,
+    build_generate_messages,
 )
 
 TEST_STRING = """\
@@ -68,3 +70,13 @@ def test_default_length_is_medio() -> None:
     medio_msgs = build_summarize_messages(text, length="medio")
 
     assert default_msgs == medio_msgs
+
+
+
+#Controllo la lista ritornata da build_generate_message
+def test_generate_returns_system_then_user_message() -> None:
+    msgs = build_generate_messages("Scrivi un testo sul mare", "breve")
+
+    assert len(msgs) == 2
+    assert msgs[0]["role"] == "system"
+    assert msgs[1]["role"] == "user"

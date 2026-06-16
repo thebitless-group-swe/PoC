@@ -4,9 +4,11 @@ import { useEditorStore } from '@/store/useEditorStore'
 
 /**
  * Restituisce il testo su cui operano le azioni AI.
- * Per ora ritorna l'intero contenuto della nota corrente.
+ * Ora se c'è testo selezionato prende quello, se no prende tutto il testo. 
  */
 export function getActiveText(): string {
-  // TODO: ED-01 userà la selezione
-  return useEditorStore.getState().currentText
+  const { selectedText, currentText } = useEditorStore.getState()
+
+  //Trimma per evitare spazi bianchi
+  return selectedText.trim() !== '' ? selectedText : currentText
 }
