@@ -15,6 +15,7 @@ import {
 } from '@codemirror/commands'
 
 import { useCurrentText, useEditorStore } from '@/store/useEditorStore'
+import { toggleLinkCommand } from '@/lib/editorCommands'
 
 /*
  * Annotation per marcare le transazioni che originiamo NOI dal sync
@@ -52,6 +53,7 @@ export function Editor() {
           ...historyKeymap,
           ...closeBracketsKeymap,
           ...searchKeymap,
+          { key: 'Mod-k', run: toggleLinkCommand, preventDefault: true }
         ]),
         /*
          * Aggiorna lo store su QUALSIASI cambio del documento, tranne
@@ -88,10 +90,13 @@ export function Editor() {
 
     const view = new EditorView({ state, parent: containerRef.current })
     viewRef.current = view
+    // Salva l'istanza nello store al mount
+    useEditorStore.getState().setEditorView(view)
 
     return () => {
       view.destroy()
       viewRef.current = null
+      useEditorStore.getState().setEditorView(null) // Pulizia al dismount
     }
   }, [])
 

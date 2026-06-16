@@ -11,6 +11,8 @@ import {
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { useEditorStore } from '@/store/useEditorStore'
+import { toggleLinkCommand } from '@/lib/editorCommands'
 
 type FormatTool = {
   label: string
@@ -27,7 +29,21 @@ const formatTools: FormatTool[] = [
   { label: 'Codice', icon: Code },
 ]
 
+type ToolLabel = (typeof formatTools)[number]['label']
+
 export function EditorToolbar() {
+  const handleAction = (label: ToolLabel) => {
+    const view = useEditorStore.getState().editorView
+    if (!view) return
+
+    switch (label) {
+      case 'Link':
+        toggleLinkCommand(view)
+        break
+      default:
+        break
+    }
+  }
   return (
     <div
       role="toolbar"
@@ -43,6 +59,7 @@ export function EditorToolbar() {
             size="icon-sm"
             aria-label={label}
             title={label}
+            onClick={() => handleAction(label)}
           >
             <Icon aria-hidden="true" />
           </Button>
