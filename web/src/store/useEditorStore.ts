@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-
+import { EditorView } from '@codemirror/view'
 import type { Note } from '@/lib/fileSystem'
 
 // SC-FS: slice note. La struttura è pronta per la persistenza su localStorage,
@@ -43,6 +43,8 @@ interface EditorState {
   outputDraft: OutputDraft
   insertOutputIntoNote: () => void
   notes: NotesSlice
+  editorView: EditorView | null
+  setEditorView: (view: EditorView | null) => void
 }
 
 export const useEditorStore = create<EditorState>((set, get) => ({
@@ -85,6 +87,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       // TODO: SC-FS — seleziona nota (non attiva)
     },
   },
+  editorView: null,
+  setEditorView: (view) => set({ editorView: view })
 }))
 
 // V9: selettore atomico — non esporre mai oggetti compositi
