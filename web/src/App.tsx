@@ -4,8 +4,13 @@ import { Preview } from '@/components/Preview'
 import { Sidebar } from '@/components/Sidebar'
 import { SummarizeModal } from '@/components/SummarizeModal'
 import { TopBar } from '@/components/TopBar'
+import { useViewMode } from '@/store/useEditorStore'
 
 export default function App() {
+  const viewMode = useViewMode()
+  const showEditor = viewMode === 'editor' || viewMode === 'split'
+  const showPreview = viewMode === 'render' || viewMode === 'split'
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       <Sidebar />
@@ -14,20 +19,43 @@ export default function App() {
         <TopBar />
 
         {/*
-          Griglia responsive
-          - <768px (default): grid-cols-1 → Editor sopra, Preview sotto.
-          - ≥768px (md):      grid-cols-2 → Editor a sinistra, Preview a destra.
+          Layout in base alla vista selezionata (ViewToggle nella TopBar):
+          - split:        griglia responsive Editor | Preview
+          - editor/render: pannello singolo a tutta larghezza
         */}
-        <main className="grid min-h-0 flex-1 grid-cols-1 md:grid-cols-2">
-          <section className="flex min-w-0 flex-col overflow-hidden border-b border-border md:border-b-0 md:border-r">
-            <EditorToolbar />
-            <div className="min-h-0 flex-1 overflow-auto">
-              <Editor />
-            </div>
-          </section>
-          <section className="min-w-0 overflow-auto">
-            <Preview />
-          </section>
+        <main
+          className={
+            viewMode === 'split'
+              ? 'grid min-h-0 flex-1 grid-cols-1 md:grid-cols-2'
+              : 'flex min-h-0 flex-1 flex-col'
+          }
+        >
+          {showEditor && (
+            <section
+              className={
+                viewMode === 'split'
+                  ? 'flex min-w-0 flex-col overflow-hidden border-b border-border md:border-b-0 md:border-r'
+                  : 'flex min-w-0 flex-1 flex-col overflow-hidden'
+              }
+            >
+              <EditorToolbar />
+              <div className="min-h-0 flex-1 overflow-auto">
+                <Editor />
+              </div>
+            </section>
+          )}
+
+          {showPreview && (
+            <section
+              className={
+                viewMode === 'split'
+                  ? 'min-w-0 overflow-auto'
+                  : 'min-w-0 flex-1 overflow-auto'
+              }
+            >
+              <Preview />
+            </section>
+          )}
         </main>
       </div>
 

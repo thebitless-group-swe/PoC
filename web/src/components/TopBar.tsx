@@ -8,6 +8,7 @@ import {
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { ViewToggle } from '@/components/ViewToggle'
 import { useLlmStream } from '@/hooks/useLlmStream'
 import {
   useAiModal,
@@ -70,6 +71,8 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          <ViewToggle />
+
           <Button
             type="button"
             size="sm"
