@@ -1,57 +1,61 @@
-import {
-  Archive,
-  FileText,
-  FolderClosed,
-  HelpCircle,
-  Plus,
-  Settings,
-  Star,
-} from 'lucide-react'
+import { useState } from 'react'
+import { FileText, FolderOpen, Plus, Save } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
+import { openNoteFromFile, renameNote, saveNoteToFile } from '@/lib/fileSystem'
+import { useCurrentNote, useNotesList, useNotesStore } from '@/store/notes'
+import { useEditorStore } from '@/store/useEditorStore'
 
-type NavItem = {
-  label: string
-  icon: typeof FileText
-  disabled?: boolean
-  active?: boolean
-}
-
-const primaryItems: NavItem[] = [
-  { label: 'New Note', icon: Plus, active: true },
-  { label: 'All Notes', icon: FileText },
-  { label: 'Favorites', icon: Star, disabled: true },
-  { label: 'Folders', icon: FolderClosed, disabled: true },
-  { label: 'Archive', icon: Archive, disabled: true },
-]
-
-const footerItems: NavItem[] = [
-  { label: 'Settings', icon: Settings },
-  { label: 'Support', icon: HelpCircle },
-]
-
-function NavButton({ label, icon: Icon, disabled, active }: NavItem) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-disabled={disabled}
-      aria-current={active ? 'page' : undefined}
-      className={cn(
-        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
-        'text-foreground/80 hover:bg-muted hover:text-foreground',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        active && 'bg-muted font-medium text-foreground',
-        disabled && 'cursor-not-allowed opacity-50 hover:bg-transparent hover:text-foreground/80',
-      )}
-    >
-      <Icon className="size-4 shrink-0" aria-hidden="true" />
-      <span className="truncate">{label}</span>
-    </button>
-  )
-}
+const actionButton = cn(
+  'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+)
 
 export function Sidebar() {
+  const notes = useNotesList()
+  const currentNote = useCurrentNote()
+  const currentId = useNotesStore((s) => s.currentId)
+  const select = useNotesStore((s) => s.select)
+  const createEmpty = useNotesStore((s) => s.createEmpty)
+  const loadNote = useNotesStore((s) => s.loadNote)
+  const updateCurrent = useNotesStore((s) => s.updateCurrent)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = useState('')
+
+  async function handleOpenFile() {
+    const note = await openNoteFromFile()
+    if (!note) return
+    loadNote(note)
+    useEditorStore.getState().setCurrentText(note.content)
+  }
+
+  async function handleSaveFile() {
+    if (!currentNote) return
+    const content = useEditorStore.getState().currentText
+    await saveNoteToFile({ ...currentNote, content })
+  }
+
+  function handleSelect(id: string) {
+    select(id)
+    const note = useNotesStore.getState().list.find((n) => n.id === id)
+    if (note) useEditorStore.getState().setCurrentText(note.content)
+  }
+
+  function startRename(note: { id: string; title: string }) {
+    setEditingId(note.id)
+    setEditingTitle(note.title)
+  }
+
+  async function commitRename(note: Parameters<typeof renameNote>[0]) {
+    const renamed = await renameNote(note, editingTitle)
+    if (currentId === note.id) {
+      updateCurrent({ title: renamed.title })
+    } else {
+      loadNote({ ...note, title: renamed.title, updatedAt: renamed.updatedAt })
+    }
+    setEditingId(null)
+  }
+
   return (
     <aside
       aria-label="Navigazione principale"
@@ -63,17 +67,89 @@ export function Sidebar() {
         </p>
       </div>
 
-      <nav className="flex-1 space-y-1 px-2" aria-label="Sezioni">
-        {primaryItems.map((item) => (
-          <NavButton key={item.label} {...item} />
-        ))}
-      </nav>
-
-      <div className="space-y-1 border-t border-border px-2 py-3">
-        {footerItems.map((item) => (
-          <NavButton key={item.label} {...item} />
-        ))}
+      <div className="space-y-1 px-2">
+        <button
+          type="button"
+          onClick={createEmpty}
+          className={cn(actionButton, 'bg-primary text-primary-foreground hover:bg-primary/90')}
+        >
+          <Plus className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">New Note</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleOpenFile}
+          className={cn(actionButton, 'text-foreground/80 hover:bg-muted hover:text-foreground')}
+        >
+          <FolderOpen className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">Apri file…</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveFile}
+          disabled={!currentNote}
+          aria-disabled={!currentNote}
+          className={cn(
+            actionButton,
+            'text-foreground/80 hover:bg-muted hover:text-foreground',
+            'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-foreground/80',
+          )}
+        >
+          <Save className="size-4 shrink-0" aria-hidden="true" />
+          <span className="truncate">Salva file</span>
+        </button>
       </div>
+
+      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Note">
+        <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          All Notes
+        </p>
+        {notes.length === 0 ? (
+          <p className="px-3 py-2 text-sm text-muted-foreground">Nessuna nota</p>
+        ) : (
+          <ul className="space-y-1">
+            {notes.map((note) => {
+              const active = note.id === currentId
+              return (
+                <li key={note.id}>
+                  {editingId === note.id ? (
+                    <input
+                      autoFocus
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onBlur={() => commitRename(note)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') commitRename(note)
+                        if (e.key === 'Escape') setEditingId(null)
+                      }}
+                      className={cn(
+                        'w-full rounded-md border border-input bg-background px-3 py-2 text-sm',
+                        'outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      )}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(note.id)}
+                      onDoubleClick={() => startRename(note)}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors',
+                        'text-foreground/80 hover:bg-muted hover:text-foreground',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        active && 'bg-muted font-medium text-foreground',
+                      )}
+                    >
+                      <FileText className="size-4 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{note.title || 'Senza titolo'}</span>
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </nav>
     </aside>
   )
 }
