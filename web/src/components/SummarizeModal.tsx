@@ -47,7 +47,7 @@ export function SummarizeModal() {
   const handleGenerate = () => {
     abort()
     useEditorStore.setState({ streamedOutput: '', errorMessage: null })
-    start(getActiveText())
+    start(getActiveText(), length)
   }
 
   const handleCancel = () => {
