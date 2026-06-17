@@ -10,7 +10,7 @@ dependencies = [
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.1",
     "uvicorn[standard]>=0.47.0",
-    "beautifulsoup4>=4.12",
+    "tavily-python>=0.5",
 ]
 
 [dependency-groups]

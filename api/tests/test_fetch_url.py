@@ -1,69 +1,58 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-import respx
-import httpx
 
-from app.fetcher import fetch_and_extract, ContentTypeError, ContentTooLargeError
+from app.llm.fetch_url import FetchError, fetch_and_extract
 
-SAMPLE_HTML = """
-<html>
-  <head><title>Test</title><style>body { color: red; }</style></head>
-  <body>
-    <script>alert('xss')</script>
-    <h1>Titolo principale</h1>
-    <p>Questo è il testo della pagina di prova.</p>
-  </body>
-</html>
-"""
+SAMPLE_CONTENT = "Questo è un contenuto di esempio estratto dalla pagina."
 
 
-# Su una pagina HTML in fixture estrae testo non vuoto
-@pytest.mark.asyncio
-@respx.mock
-async def test_fetch_and_extract_returns_text() -> None:
-    respx.get("https://example.com").mock(
-        return_value=httpx.Response(
-            200,
-            text=SAMPLE_HTML,
-            headers={"content-type": "text/html; charset=utf-8"},
-        )
-    )
+# Client Tavily mockato → ritorna contenuto di esempio → fetch_and_extract ritorna testo non vuoto
+@patch("app.llm.fetch_url.TavilyClient")
+async def test_fetch_and_extract_returns_text(mock_tavily_client: MagicMock) -> None:
+    mock_instance = MagicMock()
+    mock_instance.extract.return_value = {
+        "results": [{"raw_content": SAMPLE_CONTENT}]
+    }
+    mock_tavily_client.return_value = mock_instance
 
     result = await fetch_and_extract("https://example.com")
 
-    assert result.strip() != ""
-    assert "Titolo principale" in result
-    assert "alert" not in result   # script rimosso
-    assert "color: red" not in result  # style rimosso
+    assert result == SAMPLE_CONTENT
 
 
-# Troppo grande → errore
-@pytest.mark.asyncio
-@respx.mock
-async def test_fetch_and_extract_too_large() -> None:
-    big_content = b"x" * (2 * 1024 * 1024 + 1)
-    respx.get("https://example.com").mock(
-        return_value=httpx.Response(
-            200,
-            content=big_content,
-            headers={"content-type": "text/html"},
-        )
-    )
+# Client solleva errore (es. eccezione di rete) → fetch_and_extract propaga errore gestito
+@patch("app.llm.fetch_url.TavilyClient")
+async def test_fetch_and_extract_client_exception_raises(mock_tavily_client: MagicMock) -> None:
+    mock_instance = MagicMock()
+    mock_instance.extract.side_effect = Exception("boom")
+    mock_tavily_client.return_value = mock_instance
 
-    with pytest.raises(ContentTooLargeError):
+    with pytest.raises(FetchError):
         await fetch_and_extract("https://example.com")
 
 
-# Non testo → errore
-@pytest.mark.asyncio
-@respx.mock
-async def test_fetch_and_extract_wrong_content_type() -> None:
-    respx.get("https://example.com").mock(
-        return_value=httpx.Response(
-            200,
-            content=b"%PDF-1.4",
-            headers={"content-type": "application/pdf"},
-        )
-    )
+# Client solleva errore (URL non valido / no content) → fetch_and_extract propaga errore gestito
+@patch("app.llm.fetch_url.TavilyClient")
+async def test_fetch_and_extract_no_content_raises(mock_tavily_client: MagicMock) -> None:
+    mock_instance = MagicMock()
+    mock_instance.extract.return_value = {"results": []}
+    mock_tavily_client.return_value = mock_instance
 
-    with pytest.raises(ContentTypeError):
-        await fetch_and_extract("https://example.com")
+    with pytest.raises(FetchError):
+        await fetch_and_extract("https://invalid-url")
+
+
+# Input lungo → output troncato ≤ cap
+@patch("app.llm.fetch_url.TavilyClient")
+async def test_fetch_and_extract_truncates_long_content(mock_tavily_client: MagicMock) -> None:
+    long_content = "a" * 20_000
+    mock_instance = MagicMock()
+    mock_instance.extract.return_value = {
+        "results": [{"raw_content": long_content}]
+    }
+    mock_tavily_client.return_value = mock_instance
+
+    result = await fetch_and_extract("https://example.com")
+
+    assert len(result) <= 12_000
