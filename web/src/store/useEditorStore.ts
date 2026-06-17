@@ -42,6 +42,7 @@ interface EditorState {
   setAiModal: (modal: AiModal) => void
   outputDraft: OutputDraft
   insertOutputIntoNote: () => void
+  discardOutput: () => void
   notes: NotesSlice
   editorView: EditorView | null
   setEditorView: (view: EditorView | null) => void
@@ -70,13 +71,41 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setAiModal: (modal) => set({ aiModal: modal }),
   outputDraft: { text: '', status: 'idle' },
   insertOutputIntoNote: () => {
-    const summary = get().streamedOutput.trim()
-    if (!summary) return
+    const { currentText, streamedOutput, selectedText } = get()
+    const output = streamedOutput.trim()
+    if (!output) return
+
+    if (selectedText.length > 0) {
+      const idx = currentText.indexOf(selectedText)
+      if (idx !== -1) {
+        set({
+          currentText:
+            currentText.slice(0, idx) +
+            output +
+            currentText.slice(idx + selectedText.length),
+          streamedOutput: '',
+          selectedText: '',
+          aiModal: null,
+        })
+        return
+      }
+    }
+
+    // Nessuna selezione (o selezione non più presente nel testo): accoda.
+    const sep =
+      currentText.length > 0 && !currentText.endsWith('\n') ? '\n\n' : ''
     set({
-      currentText: summary,
+      currentText: currentText + sep + output,
       streamedOutput: '',
+      aiModal: null,
     })
   },
+  discardOutput: () =>
+    set({
+      streamedOutput: '',
+      errorMessage: null,
+      aiModal: null,
+    }),
   notes: {
     list: [],
     currentId: null,

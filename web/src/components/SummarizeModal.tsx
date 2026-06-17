@@ -52,16 +52,11 @@ export function SummarizeModal() {
 
   const handleCancel = () => {
     abort()
-    useEditorStore.setState({
-      aiModal: null,
-      streamedOutput: '',
-      errorMessage: null,
-    })
+    useEditorStore.getState().discardOutput()
   }
 
   const handleInsert = () => {
     useEditorStore.getState().insertOutputIntoNote()
-    useEditorStore.setState({ aiModal: null })
   }
 
   return (
