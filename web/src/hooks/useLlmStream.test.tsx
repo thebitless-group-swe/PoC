@@ -110,7 +110,7 @@ describe('useLlmStream — fetch e stream (#32)', () => {
       expect.stringContaining('/api/summarize'),
       expect.objectContaining({
         method: 'POST',
-        body: JSON.stringify({ text: LONG_TEXT }),
+        body: JSON.stringify({ text: LONG_TEXT, length: 'medio' }),
       }),
     )
   })

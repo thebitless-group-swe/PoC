@@ -4,7 +4,10 @@ import { parseSseStream } from '@/lib/sse'
 
 export type LlmStreamStatus = 'idle' | 'streaming' | 'done' | 'error'
 
+export type SummaryLength = 'breve' | 'medio' | 'dettagliato'
+
 const MIN_TEXT_LENGTH = 10
+const DEFAULT_LENGTH: SummaryLength = 'medio'
 
 // Base URL assoluta del backend: la chiamata e cross-origin diretta su :8000
 // (motivo per cui esiste CORS_ORIGINS lato API). In assenza della variabile si
@@ -26,7 +29,7 @@ export type EditorActions = {
 }
 
 export type LlmStreamHandle = {
-  start: (text: string) => Promise<void>
+  start: (text: string, length?: SummaryLength) => Promise<void>
   abort: () => void
   status: LlmStreamStatus
 }
@@ -47,7 +50,7 @@ export function useLlmStream(
   }, [])
 
   const start = useCallback(
-    async (text: string) => {
+    async (text: string, length: SummaryLength = DEFAULT_LENGTH) => {
       const actions = getActions()
 
       // Pre-validazione: stessa soglia del backend (Field min_length=10).
@@ -66,7 +69,7 @@ export function useLlmStream(
         const response = await fetchImpl(SUMMARIZE_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
+          body: JSON.stringify({ text, length }),
           signal: controller.signal,
         })
 
