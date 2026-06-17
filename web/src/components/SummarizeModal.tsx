@@ -17,6 +17,7 @@ import { getActiveText } from '@/lib/aiActions'
 import { cn } from '@/lib/utils'
 import {
   useAiModal,
+  useCurrentText,
   useEditorStore,
   useErrorMessage,
   useIsGenerating,
@@ -31,31 +32,43 @@ const LENGTHS: { value: Length; label: string }[] = [
   { value: 'dettagliato', label: 'Dettagliato' },
 ]
 
+type SummarizeParams = { text: string; length: Length }
+
 export function SummarizeModal() {
   const aiModal = useAiModal()
   const open = aiModal === 'summarize'
 
-  // Selettore di lunghezza: solo UI fino a POC4-B-01 (parametro backend).
   const [length, setLength] = useState<Length>('medio')
+  const [lastParams, setLastParams] = useState<SummarizeParams | null>(null)
 
   const { start, abort } = useLlmStream()
   const streamedOutput = useStreamedOutput()
   const isGenerating = useIsGenerating()
   const errorMessage = useErrorMessage()
+  const currentText = useCurrentText()
   const displayed = useTypewriter(streamedOutput, isGenerating)
+
+  const sameAsLast =
+    lastParams !== null &&
+    lastParams.text === currentText &&
+    lastParams.length === length
 
   const handleGenerate = () => {
     abort()
+    const snapshot: SummarizeParams = { text: getActiveText(), length }
+    setLastParams(snapshot)
     useEditorStore.setState({ streamedOutput: '', errorMessage: null })
-    start(getActiveText(), length)
+    start(snapshot.text, snapshot.length)
   }
 
   const handleCancel = () => {
     abort()
+    setLastParams(null)
     useEditorStore.getState().discardOutput()
   }
 
   const handleInsert = () => {
+    setLastParams(null)
     useEditorStore.getState().insertOutputIntoNote()
   }
 
@@ -140,7 +153,7 @@ export function SummarizeModal() {
                 disabled={isGenerating}
                 aria-disabled={isGenerating}
               >
-                {streamedOutput.length > 0 ? 'Rigenera' : 'Genera'}
+                {sameAsLast ? 'Rigenera' : 'Genera'}
               </Button>
               {isGenerating && (
                 <span

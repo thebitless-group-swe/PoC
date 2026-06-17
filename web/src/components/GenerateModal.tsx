@@ -45,6 +45,11 @@ export function GenerateModal() {
   const [url, setUrl] = useState('')
   const [length, setLength] = useState<Length>('medio')
 
+  type GenerateParams =
+    | { mode: 'prompt'; prompt: string; length: Length }
+    | { mode: 'link'; url: string; length: Length }
+  const [lastParams, setLastParams] = useState<GenerateParams | null>(null)
+
   const streamedOutput = useStreamedOutput()
   const isGenerating = useIsGenerating()
   const errorMessage = useErrorMessage()
@@ -57,7 +62,24 @@ export function GenerateModal() {
     controllerRef.current = null
   }
 
-  const runStream = async () => {
+  const currentSnapshot = (): GenerateParams =>
+    mode === 'link'
+      ? { mode: 'link', url: url.trim(), length }
+      : { mode: 'prompt', prompt: prompt.trim(), length }
+
+  const paramsEqual = (a: GenerateParams, b: GenerateParams) =>
+    a.mode === b.mode &&
+    a.length === b.length &&
+    (a.mode === 'link' && b.mode === 'link'
+      ? a.url === b.url
+      : a.mode === 'prompt' && b.mode === 'prompt'
+        ? a.prompt === b.prompt
+        : false)
+
+  const sameAsLast =
+    lastParams !== null && paramsEqual(lastParams, currentSnapshot())
+
+  const runStream = async (snapshot: GenerateParams) => {
     abort()
     const controller = new AbortController()
     controllerRef.current = controller
@@ -67,11 +89,11 @@ export function GenerateModal() {
     useEditorStore.setState({ errorMessage: null })
 
     const endpoint =
-      mode === 'link' ? GENERATE_LINK_ENDPOINT : GENERATE_ENDPOINT
+      snapshot.mode === 'link' ? GENERATE_LINK_ENDPOINT : GENERATE_ENDPOINT
     const body =
-      mode === 'link'
-        ? { url: url.trim(), length }
-        : { prompt: prompt.trim(), length }
+      snapshot.mode === 'link'
+        ? { url: snapshot.url, length: snapshot.length }
+        : { prompt: snapshot.prompt, length: snapshot.length }
 
     try {
       const response = await fetch(endpoint, {
@@ -108,15 +130,19 @@ export function GenerateModal() {
     (mode === 'link' ? url.trim().length > 0 : prompt.trim().length >= 3)
 
   const handleGenerate = () => {
-    void runStream()
+    const snapshot = currentSnapshot()
+    setLastParams(snapshot)
+    void runStream(snapshot)
   }
 
   const handleDiscard = () => {
     abort()
+    setLastParams(null)
     useEditorStore.getState().discardOutput()
   }
 
   const handleInsert = () => {
+    setLastParams(null)
     useEditorStore.getState().insertOutputIntoNote()
   }
 
@@ -274,7 +300,7 @@ export function GenerateModal() {
                 disabled={!canGenerate}
                 aria-disabled={!canGenerate}
               >
-                {streamedOutput.length > 0 ? 'Rigenera' : 'Genera'}
+                {sameAsLast ? 'Rigenera' : 'Genera'}
               </Button>
               {isGenerating && (
                 <span
