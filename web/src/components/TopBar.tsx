@@ -12,7 +12,6 @@ import { ViewToggle } from '@/components/ViewToggle'
 import { useLlmStream } from '@/hooks/useLlmStream'
 import {
   useAiModal,
-  useCurrentText,
   useEditorStore,
   useErrorMessage,
   useIsGenerating,
@@ -41,21 +40,21 @@ export interface TopBarProps {
 }
 
 export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
-  const { start, abort } = useLlmStream()
+  const { abort } = useLlmStream()
   const isGenerating = useIsGenerating()
   const errorMessage = useErrorMessage()
-  const currentText = useCurrentText()
   const aiModal = useAiModal()
   const showStreamingUi = isGenerating && aiModal === null
 
-  const onRun = () => start(currentText)
-  const onSummarize = () => {
+  const openModal = (modal: 'summarize' | 'generate') => {
     useEditorStore.setState({
       streamedOutput: '',
       errorMessage: null,
-      aiModal: 'summarize',
+      aiModal: modal,
     })
   }
+  const onSummarize = () => openModal('summarize')
+  const onGenerate = () => openModal('generate')
 
   return (
     <header className="flex flex-col gap-2 border-b border-border bg-background px-4 py-3">
@@ -76,7 +75,7 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
           <Button
             type="button"
             size="sm"
-            onClick={onRun}
+            onClick={onGenerate}
             disabled={isGenerating}
             aria-disabled={isGenerating}
             aria-label="Genera"

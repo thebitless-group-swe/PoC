@@ -1,5 +1,6 @@
 import { Editor } from '@/components/Editor'
 import { EditorToolbar } from '@/components/EditorToolbar'
+import { GenerateModal } from '@/components/GenerateModal'
 import { Preview } from '@/components/Preview'
 import { Sidebar } from '@/components/Sidebar'
 import { SummarizeModal } from '@/components/SummarizeModal'
@@ -60,6 +61,7 @@ export default function App() {
       </div>
 
       <SummarizeModal />
+      <GenerateModal />
     </div>
   )
 }
