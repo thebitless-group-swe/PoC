@@ -21,6 +21,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate */
+        post: operations["generate_api_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/generate-from-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate From Link */
+        post: operations["generate_from_link_api_generate_from_link_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/": {
         parameters: {
             query?: never;
@@ -42,15 +76,43 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** GenerateRequest */
+        GenerateRequest: {
+            /** Prompt */
+            prompt: string;
+            /**
+             * Length
+             * @default medio
+             * @enum {string}
+             */
+            length: "breve" | "medio" | "dettagliato";
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** LinkRequest */
+        LinkRequest: {
+            /** Url */
+            url: string;
+            /**
+             * Length
+             * @default medio
+             * @enum {string}
+             */
+            length: "breve" | "medio" | "dettagliato";
+        };
         /** TextRequest */
         TextRequest: {
             /** Text */
             text: string;
+            /**
+             * Length
+             * @default medio
+             * @enum {string}
+             */
+            length: "breve" | "medio" | "dettagliato";
         };
         /** ValidationError */
         ValidationError: {
@@ -107,6 +169,72 @@ export interface operations {
             };
         };
     };
+    generate_api_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_from_link_api_generate_from_link_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     health__get: {
         parameters: {
             query?: never;
@@ -130,14 +258,3 @@ export interface operations {
         };
     };
 }
-
-// provvisori, sostituiti da SA-02 (openapi-typescript)
-export type GenerateRequest = {
-    prompt: string;
-    length: "breve" | "medio" | "dettagliato";
-};
-
-export type LinkRequest = {
-    url: string;
-    length: "breve" | "medio" | "dettagliato";
-};
