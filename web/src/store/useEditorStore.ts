@@ -112,7 +112,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     createEmpty: () => {
       // TODO: SC-FS — crea nota vuota + persistenza localStorage (non attiva)
     },
-    select: (_id) => {
+    select: () => {
       // TODO: SC-FS — seleziona nota (non attiva)
     },
   },

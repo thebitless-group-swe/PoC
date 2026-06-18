@@ -16,6 +16,7 @@ export async function openNoteFromFile(): Promise<Note | null> {
   if ('showOpenFilePicker' in window) {
     // File System Access API (Chrome/Edge)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const [fileHandle] = await (window as any).showOpenFilePicker({
         types: [
           {
@@ -28,9 +29,9 @@ export async function openNoteFromFile(): Promise<Note | null> {
       const file = await fileHandle.getFile()
       text = await file.text()
       fileName = file.name
-    } catch (err: any) {
+    } catch (err: unknown) {
       // L'utente ha annullato il picker
-      if (err.name === 'AbortError') return null
+      if (err instanceof Error && err.name === 'AbortError') return null
       throw err
     }
   } else {
@@ -76,6 +77,7 @@ export async function saveNoteToFile(note: Note): Promise<void> {
 
   if ('showSaveFilePicker' in window) {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const fileHandle = await (window as any).showSaveFilePicker({
         suggestedName: fileName,
         types: [
@@ -88,8 +90,8 @@ export async function saveNoteToFile(note: Note): Promise<void> {
       const writable = await fileHandle.createWritable()
       await writable.write(blob)
       await writable.close()
-    } catch (err: any) {
-      if (err.name === 'AbortError') return
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
       throw err
     }
   } else {

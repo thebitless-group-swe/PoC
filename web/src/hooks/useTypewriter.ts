@@ -27,33 +27,35 @@ export function useTypewriter(
 ): string {
   const [displayedOutput, setDisplayedOutput] = useState('')
 
-  // Ref al testo sorgente: aggiornato ad ogni render senza ri-triggerare
-  // l'effect del RAF. Il tick legge sempre il valore più recente.
+  //Ref aggiornato tramite useEffect per evitare accesso durante il render
   const streamedTextRef = useRef(streamedText)
-  streamedTextRef.current = streamedText
-
-  // Indice del prossimo carattere da "digitare". Ref per non re-triggerare
-  // l'effect: viene letto/scritto solo dentro il RAF callback.
+  useEffect(() => {
+    streamedTextRef.current = streamedText
+  }, [streamedText])
+  
   const cursorRef = useRef(0)
   const rafRef = useRef<number | null>(null)
+
+
+  
 
   /*
    * Reset quando parte una nuova generazione: il testo visualizzato torna
    * vuoto e il cursore riparte da zero.
    */
-  useEffect(() => {
+ useEffect(() => {
     if (isGenerating) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDisplayedOutput('')
       cursorRef.current = 0
     }
   }, [isGenerating])
-
   /*
    * Loop RAF stabile: si avvia quando isGenerating diventa true e si ferma
    * quando lo streaming è finito E tutto il testo è stato visualizzato.
    * NON dipende da streamedText → niente cleanup/restart ad ogni chunk.
    */
-  useEffect(() => {
+ useEffect(() => {
     const tick = () => {
       const cursor = cursorRef.current
       const target = streamedTextRef.current.length
@@ -64,12 +66,8 @@ export function useTypewriter(
         setDisplayedOutput(streamedTextRef.current.slice(0, next))
         rafRef.current = requestAnimationFrame(tick)
       } else if (isGenerating) {
-        // Il cursore ha raggiunto il testo disponibile ma lo streaming è
-        // ancora attivo: aspettiamo il prossimo frame per nuovi chunk.
         rafRef.current = requestAnimationFrame(tick)
       }
-      // Se cursor >= target E !isGenerating → streaming finito, tutto
-      // visualizzato: il loop si ferma naturalmente.
     }
 
     if (isGenerating || cursorRef.current < streamedTextRef.current.length) {
