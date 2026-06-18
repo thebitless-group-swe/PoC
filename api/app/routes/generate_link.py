@@ -35,7 +35,10 @@ async def generate_from_link(
     except FetchError as exc:
         raise HTTPException(status_code=503, detail=_SERVICE_UNAVAILABLE_DETAIL) from exc
 
-    messages = build_generate_messages(text, payload.length)
+    generation_prompt = (
+        f"Scrivi un testo originale in italiano evitando frasi introduttive di qualsiasi tipo basato sul seguente contenuto estratto da link: {text}"
+    )
+    messages = build_generate_messages(generation_prompt, payload.length)
     stream = client.stream(messages)
 
     try:
