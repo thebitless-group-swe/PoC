@@ -1,5 +1,142 @@
 import { EditorView } from '@codemirror/view'
 
+/**
+ * Avvolge la selezione tra due marcatori inline (es. ** per grassetto).
+ * È un toggle: se la selezione è già avvolta — sia che i marcatori siano
+ * dentro la selezione, sia che la circondino nel documento — li rimuove.
+ */
+const wrapInline = (
+  view: EditorView,
+  before: string,
+  after: string = before,
+): boolean => {
+  const { from, to } = view.state.selection.main
+  const selected = view.state.sliceDoc(from, to)
+
+  // Caso 1: i marcatori sono dentro la selezione → li tolgo.
+  if (
+    selected.length >= before.length + after.length &&
+    selected.startsWith(before) &&
+    selected.endsWith(after)
+  ) {
+    const inner = selected.slice(before.length, selected.length - after.length)
+    view.dispatch({
+      changes: { from, to, insert: inner },
+      selection: { anchor: from, head: from + inner.length },
+    })
+    view.focus()
+    return true
+  }
+
+  // Caso 2: i marcatori circondano la selezione nel documento → li tolgo.
+  const outerFrom = from - before.length
+  const outerTo = to + after.length
+  if (
+    outerFrom >= 0 &&
+    outerTo <= view.state.doc.length &&
+    view.state.sliceDoc(outerFrom, from) === before &&
+    view.state.sliceDoc(to, outerTo) === after
+  ) {
+    view.dispatch({
+      changes: { from: outerFrom, to: outerTo, insert: selected },
+      selection: { anchor: outerFrom, head: outerFrom + selected.length },
+    })
+    view.focus()
+    return true
+  }
+
+  // Caso 3: avvolgo la selezione (vuota o no) e la lascio selezionata.
+  view.dispatch({
+    changes: { from, to, insert: `${before}${selected}${after}` },
+    selection: {
+      anchor: from + before.length,
+      head: from + before.length + selected.length,
+    },
+  })
+  view.focus()
+  return true
+}
+
+export const toggleBoldCommand = (view: EditorView): boolean =>
+  wrapInline(view, '**')
+
+export const toggleItalicCommand = (view: EditorView): boolean =>
+  wrapInline(view, '*')
+
+export const toggleInlineCodeCommand = (view: EditorView): boolean =>
+  wrapInline(view, '`')
+
+/**
+ * Titolo: cicla il livello sulla riga corrente — nessuno → # → ## → ### →
+ * di nuovo testo normale.
+ */
+export const cycleHeadingCommand = (view: EditorView): boolean => {
+  const { from } = view.state.selection.main
+  const line = view.state.doc.lineAt(from)
+  const match = line.text.match(/^(#{1,6}) /)
+
+  let insert = '# '
+  let removeLen = 0
+  if (match) {
+    removeLen = match[0].length
+    insert = match[1].length >= 3 ? '' : '#'.repeat(match[1].length + 1) + ' '
+  }
+
+  view.dispatch({
+    changes: { from: line.from, to: line.from + removeLen, insert },
+  })
+  view.focus()
+  return true
+}
+
+/**
+ * Lista puntata: aggiunge "- " a ogni riga della selezione, oppure lo
+ * rimuove dalle righe che già lo hanno (toggle per riga).
+ */
+export const toggleListCommand = (view: EditorView): boolean => {
+  const { from, to } = view.state.selection.main
+  const startLine = view.state.doc.lineAt(from)
+  const endLine = view.state.doc.lineAt(to)
+
+  const changes: { from: number; to: number; insert: string }[] = []
+  for (let n = startLine.number; n <= endLine.number; n++) {
+    const line = view.state.doc.line(n)
+    const match = line.text.match(/^(\s*)- /)
+    if (match) {
+      changes.push({
+        from: line.from + match[1].length,
+        to: line.from + match[0].length,
+        insert: '',
+      })
+    } else {
+      changes.push({ from: line.from, to: line.from, insert: '- ' })
+    }
+  }
+
+  view.dispatch({ changes })
+  view.focus()
+  return true
+}
+
+/**
+ * Immagine: avvolge la selezione come alt text in ![alt](url) e seleziona
+ * "https://" per la sovrascrittura immediata (stessa UX del link).
+ */
+export const insertImageCommand = (view: EditorView): boolean => {
+  const { from, to } = view.state.selection.main
+  const selected = view.state.sliceDoc(from, to)
+  const defaultUrl = 'https://'
+
+  // "![" + selected + "](" = selected.length + 4 caratteri prima dell'url
+  const urlStart = from + selected.length + 4
+  view.dispatch({
+    changes: { from, to, insert: `![${selected}](${defaultUrl})` },
+    selection: { anchor: urlStart, head: urlStart + defaultUrl.length },
+  })
+  view.focus()
+  return true
+}
+
 export const toggleLinkCommand = (view: EditorView): boolean => {
   const mainSelection = view.state.selection.main
   const { from, to } = mainSelection

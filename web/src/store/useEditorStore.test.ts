@@ -138,96 +138,137 @@ describe('useEditorStore — insertOutputIntoNote', () => {
     expect(result.current.currentText).toBe('testo originale')
   })
 
-  it('senza selezione: accoda con separatore \\n\\n', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      result.current.setCurrentText('testo originale')
-      result.current.appendChunk('riassunto generato')
+  describe('azione "genera": accoda contenuto nuovo', () => {
+    it('senza selezione: accoda con separatore \\n\\n', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'generate' })
+        result.current.setCurrentText('testo originale')
+        result.current.appendChunk('contenuto generato')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe(
+        'testo originale\n\ncontenuto generato',
+      )
+      expect(result.current.streamedOutput).toBe('')
+      expect(result.current.aiModal).toBeNull()
     })
-    act(() => {
-      result.current.insertOutputIntoNote()
+
+    it('currentText vuoto: scrive output senza separatore', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'generate' })
+        result.current.appendChunk('solo output')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe('solo output')
     })
-    expect(result.current.currentText).toBe(
-      'testo originale\n\nriassunto generato',
-    )
-    expect(result.current.streamedOutput).toBe('')
-    expect(result.current.aiModal).toBeNull()
+
+    it('currentText finisce con newline: nessun separatore extra', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'generate' })
+        result.current.setCurrentText('riga uno\n')
+        result.current.appendChunk('riga due')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe('riga uno\nriga due')
+    })
+
+    it('accoda anche se esiste una selezione (ignora il sorgente)', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'generate' })
+        result.current.setCurrentText('prima parola dopo')
+        useEditorStore.setState({ selectedText: 'parola' })
+        result.current.appendChunk('contenuto nuovo')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe(
+        'prima parola dopo\n\ncontenuto nuovo',
+      )
+    })
+
+    it('trimma whitespace iniziale e finale dello streamedOutput', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'generate' })
+        result.current.setCurrentText('base')
+        result.current.appendChunk('\n\n  output  \n')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe('base\n\noutput')
+    })
   })
 
-  it('currentText vuoto: scrive output senza separatore', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      result.current.appendChunk('solo output')
+  describe('azione "riassumi": sostituisce il sorgente', () => {
+    it('con selezione: sostituisce la sottostringa selezionata', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'summarize' })
+        result.current.setCurrentText('prima [DA RIMPIAZZARE] dopo')
+        useEditorStore.setState({ selectedText: '[DA RIMPIAZZARE]' })
+        result.current.appendChunk('nuovo')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe('prima nuovo dopo')
+      expect(result.current.streamedOutput).toBe('')
+      expect(useEditorStore.getState().selectedText).toBe('')
+      expect(result.current.aiModal).toBeNull()
     })
-    act(() => {
-      result.current.insertOutputIntoNote()
-    })
-    expect(result.current.currentText).toBe('solo output')
-  })
 
-  it('currentText finisce con newline: nessun separatore extra', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      result.current.setCurrentText('riga uno\n')
-      result.current.appendChunk('riga due')
+    it('senza selezione: il riassunto sostituisce l\'intera nota', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'summarize' })
+        result.current.setCurrentText('testo lungo originale della nota')
+        result.current.appendChunk('riassunto')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe('riassunto')
+      expect(result.current.streamedOutput).toBe('')
+      expect(result.current.aiModal).toBeNull()
     })
-    act(() => {
-      result.current.insertOutputIntoNote()
-    })
-    expect(result.current.currentText).toBe('riga uno\nriga due')
-  })
 
-  it('con selezione: sostituisce la sottostringa selezionata', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      result.current.setCurrentText('prima [DA RIMPIAZZARE] dopo')
-      useEditorStore.setState({ selectedText: '[DA RIMPIAZZARE]' })
-      result.current.appendChunk('nuovo')
+    it('selezione non trovata nel testo: sostituisce l\'intera nota', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'summarize' })
+        result.current.setCurrentText('testo corrente')
+        useEditorStore.setState({ selectedText: 'qualcosa che non esiste' })
+        result.current.appendChunk('riassunto')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.currentText).toBe('riassunto')
     })
-    act(() => {
-      result.current.insertOutputIntoNote()
-    })
-    expect(result.current.currentText).toBe('prima nuovo dopo')
-    expect(result.current.streamedOutput).toBe('')
-    expect(useEditorStore.getState().selectedText).toBe('')
-    expect(result.current.aiModal).toBeNull()
-  })
 
-  it('selezione non trovata nel testo: ripiega su accodamento', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      result.current.setCurrentText('testo corrente')
-      useEditorStore.setState({ selectedText: 'qualcosa che non esiste' })
-      result.current.appendChunk('coda')
+    it('chiude la modale aiModal a null dopo inserimento', () => {
+      const { result } = renderHook(() => useEditorStore())
+      act(() => {
+        useEditorStore.setState({ aiModal: 'summarize' })
+        result.current.appendChunk('out')
+      })
+      act(() => {
+        result.current.insertOutputIntoNote()
+      })
+      expect(result.current.aiModal).toBeNull()
     })
-    act(() => {
-      result.current.insertOutputIntoNote()
-    })
-    expect(result.current.currentText).toBe('testo corrente\n\ncoda')
-  })
-
-  it('trimma whitespace iniziale e finale dello streamedOutput', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      result.current.setCurrentText('base')
-      result.current.appendChunk('\n\n  riassunto  \n')
-    })
-    act(() => {
-      result.current.insertOutputIntoNote()
-    })
-    expect(result.current.currentText).toBe('base\n\nriassunto')
-  })
-
-  it('chiude la modale aiModal a null dopo inserimento', () => {
-    const { result } = renderHook(() => useEditorStore())
-    act(() => {
-      useEditorStore.setState({ aiModal: 'summarize' })
-      result.current.appendChunk('out')
-    })
-    act(() => {
-      result.current.insertOutputIntoNote()
-    })
-    expect(result.current.aiModal).toBeNull()
   })
 })
 

@@ -32,9 +32,23 @@ export function useTypewriter(
   useEffect(() => {
     streamedTextRef.current = streamedText
   }, [streamedText])
-  
+
   const cursorRef = useRef(0)
   const rafRef = useRef<number | null>(null)
+
+  /*
+   * Reset quando la sorgente si accorcia o si azzera (es. apertura di una
+   * modale che pulisce streamedOutput, o scarto dell'output). Senza questo,
+   * l'output visualizzato resterebbe "appiccicato" all'ultima generazione:
+   * il reset su isGenerating scatta solo all'avvio di una NUOVA generazione,
+   * non quando si riapre una modale senza ancora rigenerare.
+   */
+  useEffect(() => {
+    if (streamedText.length < cursorRef.current) {
+      cursorRef.current = streamedText.length
+      setDisplayedOutput(streamedText)
+    }
+  }, [streamedText])
 
 
   

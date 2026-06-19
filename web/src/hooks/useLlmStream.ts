@@ -82,6 +82,9 @@ export function useLlmStream(
 
         const reader = response.body!.getReader()
         for await (const chunk of parseSseStream(reader)) {
+          // Dopo un abort, scarta i chunk già bufferizzati: eviterebbero
+          // di ri-popolare streamedOutput appena azzerato (discardOutput).
+          if (controller.signal.aborted) break
           actions.appendChunk(chunk)
         }
 
