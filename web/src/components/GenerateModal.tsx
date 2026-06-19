@@ -113,6 +113,9 @@ export function GenerateModal() {
 
       const reader = response.body!.getReader()
       for await (const chunk of parseSseStream(reader)) {
+        // Dopo un abort, scarta i chunk già bufferizzati per non ri-popolare
+        // streamedOutput appena azzerato.
+        if (controller.signal.aborted) break
         useEditorStore.getState().appendChunk(chunk)
       }
       useEditorStore.getState().finishStreaming()

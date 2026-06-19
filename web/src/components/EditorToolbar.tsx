@@ -7,12 +7,19 @@ import {
   Link,
   List,
   Save,
-  Share2,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
-import { toggleLinkCommand } from '@/lib/editorCommands'
+import {
+  cycleHeadingCommand,
+  insertImageCommand,
+  toggleBoldCommand,
+  toggleInlineCodeCommand,
+  toggleItalicCommand,
+  toggleLinkCommand,
+  toggleListCommand,
+} from '@/lib/editorCommands'
 
 type FormatTool = {
   label: string
@@ -37,8 +44,26 @@ export function EditorToolbar() {
     if (!view) return
 
     switch (label) {
+      case 'Grassetto':
+        toggleBoldCommand(view)
+        break
+      case 'Corsivo':
+        toggleItalicCommand(view)
+        break
+      case 'Titolo':
+        cycleHeadingCommand(view)
+        break
+      case 'Lista':
+        toggleListCommand(view)
+        break
       case 'Link':
         toggleLinkCommand(view)
+        break
+      case 'Immagine':
+        insertImageCommand(view)
+        break
+      case 'Codice':
+        toggleInlineCodeCommand(view)
         break
       default:
         break
@@ -75,18 +100,6 @@ export function EditorToolbar() {
         >
           <Save aria-hidden="true" />
           Save
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled
-          aria-disabled="true"
-          title="Share (non disponibile)"
-          aria-label="Share (non disponibile)"
-        >
-          <Share2 aria-hidden="true" />
-          Share
         </Button>
       </div>
     </div>

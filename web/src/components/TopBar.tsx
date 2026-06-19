@@ -8,8 +8,8 @@ import {
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ViewToggle } from '@/components/ViewToggle'
 import { useLlmStream } from '@/hooks/useLlmStream'
+import { useCurrentNote } from '@/store/notes'
 import {
   useAiModal,
   useEditorStore,
@@ -36,15 +36,20 @@ const disabledActions: AiAction[] = [
 ]
 
 export interface TopBarProps {
+  /** Override esplicito del titolo; se assente usa la nota corrente dello store. */
   noteTitle?: string
 }
 
-export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
+export function TopBar({ noteTitle }: TopBarProps) {
   const { abort } = useLlmStream()
   const isGenerating = useIsGenerating()
   const errorMessage = useErrorMessage()
   const aiModal = useAiModal()
+  const currentNote = useCurrentNote()
   const showStreamingUi = isGenerating && aiModal === null
+
+  // Titolo reattivo: prop esplicita > nota corrente > fallback.
+  const displayTitle = noteTitle ?? currentNote?.title ?? 'Untitled Note'
 
   const openModal = (modal: 'summarize' | 'generate') => {
     useEditorStore.setState({
@@ -58,23 +63,21 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
 
   return (
     <header className="flex flex-col gap-2 border-b border-border bg-background px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="min-w-0 flex-1 basis-full md:basis-auto">
-          <div
-            role="heading"
-            aria-level={1}
-            className="truncate text-base font-semibold text-foreground"
-          >
-            {noteTitle}
-          </div>
-        </div>
+      {/* Titolo della nota: da solo in cima, in evidenza. */}
+      <div
+        role="heading"
+        aria-level={1}
+        className="truncate text-lg font-semibold tracking-tight text-foreground"
+      >
+        {displayTitle}
+      </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <ViewToggle />
-
+      {/* Riga azioni AI, sotto il titolo. */}
+      <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
             size="sm"
+            variant="secondary"
             onClick={onGenerate}
             disabled={isGenerating}
             aria-disabled={isGenerating}
@@ -132,7 +135,6 @@ export function TopBar({ noteTitle = 'Untitled Note' }: TopBarProps) {
             />
           )}
         </div>
-      </div>
 
       <div aria-live="polite">
         {errorMessage && aiModal === null && (

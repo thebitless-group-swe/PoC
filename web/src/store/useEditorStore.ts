@@ -71,10 +71,31 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setAiModal: (modal) => set({ aiModal: modal }),
   outputDraft: { text: '', status: 'idle' },
   insertOutputIntoNote: () => {
-    const { currentText, streamedOutput, selectedText } = get()
+    const { currentText, streamedOutput, selectedText, aiModal } = get()
     const output = streamedOutput.trim()
     if (!output) return
 
+    // La semantica di inserimento dipende dal TIPO di azione, non dalla
+    // presenza di una selezione:
+    //  - "genera" produce contenuto nuovo da input esterni (prompt/link):
+    //    nella nota non c'è nulla da sostituire, quindi si ACCODA.
+    //  - "riassumi" (e le altre trasformazioni del testo della nota)
+    //    SOSTITUISCE il sorgente, coerente con getActiveText(): ciò che è
+    //    stato dato in pasto al modello viene rimpiazzato dall'output.
+    if (aiModal === 'generate') {
+      const sep =
+        currentText.length > 0 && !currentText.endsWith('\n') ? '\n\n' : ''
+      set({
+        currentText: currentText + sep + output,
+        streamedOutput: '',
+        aiModal: null,
+      })
+      return
+    }
+
+    // Trasformazione (riassumi): se c'è una selezione ancora presente nel
+    // testo sostituisce solo quella, altrimenti l'output sostituisce
+    // l'intera nota (il riassunto della nota intera diventa la nota).
     if (selectedText.length > 0) {
       const idx = currentText.indexOf(selectedText)
       if (idx !== -1) {
@@ -91,12 +112,10 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       }
     }
 
-    // Nessuna selezione (o selezione non più presente nel testo): accoda.
-    const sep =
-      currentText.length > 0 && !currentText.endsWith('\n') ? '\n\n' : ''
     set({
-      currentText: currentText + sep + output,
+      currentText: output,
       streamedOutput: '',
+      selectedText: '',
       aiModal: null,
     })
   },
