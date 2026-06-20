@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button'
 import { useTypewriter } from '@/hooks/useTypewriter'
 import { parseSseStream } from '@/lib/sse'
 import { cn } from '@/lib/utils'
+import type { GenerateRequest, LinkRequest } from '@/types/models'
 import {
   useAiModal,
   useEditorStore,
@@ -23,7 +24,8 @@ import {
   useStreamedOutput,
 } from '@/store/useEditorStore'
 
-type Length = 'breve' | 'medio' | 'dettagliato'
+// Stessa union del contratto: la deriviamo invece di riscriverla.
+type Length = GenerateRequest['length']
 type Mode = 'prompt' | 'link'
 
 const LENGTHS: { value: Length; label: string }[] = [
@@ -90,7 +92,9 @@ export function GenerateModal() {
 
     const endpoint =
       snapshot.mode === 'link' ? GENERATE_LINK_ENDPOINT : GENERATE_ENDPOINT
-    const body =
+    // In modalità link il body è un LinkRequest, altrimenti un GenerateRequest.
+    // Ordine delle chiavi invariato per non cambiare l'output JSON.
+    const body: LinkRequest | GenerateRequest =
       snapshot.mode === 'link'
         ? { url: snapshot.url, length: snapshot.length }
         : { prompt: snapshot.prompt, length: snapshot.length }
