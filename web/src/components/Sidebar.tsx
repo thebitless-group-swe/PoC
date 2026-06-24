@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, FolderOpen, Plus, Save } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, FolderOpen, Plus, Save } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { openNoteFromFile, renameNote, saveNoteToFile } from '@/lib/fileSystem'
@@ -12,6 +12,7 @@ const actionButton = cn(
 )
 
 export function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false)
   const notes = useNotesList()
   const currentNote = useCurrentNote()
   const currentId = useNotesStore((s) => s.currentId)
@@ -56,15 +57,41 @@ export function Sidebar() {
     setEditingId(null)
   }
 
+ if (collapsed) {
+    return (
+      <aside
+        aria-label="Navigazione principale"
+        className="flex h-full w-12 shrink-0 flex-col items-center border-r border-border bg-card py-4"
+      >
+        <button
+          type="button"
+          onClick={() => setCollapsed(false)}
+          aria-label="Apri barra laterale"
+          className="flex items-center justify-center rounded-md p-2 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </button>
+      </aside>
+    )
+  }
+
   return (
     <aside
       aria-label="Navigazione principale"
       className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-card"
     >
-      <div className="px-4 py-4">
+      <div className="flex items-center justify-between px-4 py-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           My Workspace
         </p>
+        <button
+          type="button"
+          onClick={() => setCollapsed(true)}
+          aria-label="Chiudi barra laterale"
+          className="rounded-md p-1 text-foreground/80 transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+          <ChevronLeft className="size-4" aria-hidden="true" />
+        </button>
       </div>
 
       <div className="space-y-1 px-2">
@@ -74,7 +101,7 @@ export function Sidebar() {
           className={cn(actionButton, 'bg-primary text-primary-foreground hover:bg-primary/90')}
         >
           <Plus className="size-4 shrink-0" aria-hidden="true" />
-          <span className="truncate">New Note</span>
+          <span className="truncate">Nuova nota</span>
         </button>
         <button
           type="button"
@@ -102,7 +129,7 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Note">
         <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          All Notes
+          Tutte le note
         </p>
         {notes.length === 0 ? (
           <p className="px-3 py-2 text-sm text-muted-foreground">Nessuna nota</p>

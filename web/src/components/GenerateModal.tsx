@@ -27,9 +27,9 @@ type Length = 'breve' | 'medio' | 'dettagliato'
 type Mode = 'prompt' | 'link'
 
 const LENGTHS: { value: Length; label: string }[] = [
-  { value: 'breve', label: 'Short' },
-  { value: 'medio', label: 'Medium' },
-  { value: 'dettagliato', label: 'Long' },
+  { value: 'breve', label: 'Breve' },
+  { value: 'medio', label: 'Medio' },
+  { value: 'dettagliato', label: 'Dettagliato' },
 ]
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
@@ -177,7 +177,7 @@ export function GenerateModal() {
               [
                 {
                   value: 'prompt' as Mode,
-                  label: 'Prompt',
+                  label: 'Istruzioni',
                   icon: MessageSquare,
                 },
                 { value: 'link' as Mode, label: 'Da link', icon: Link },
@@ -213,7 +213,7 @@ export function GenerateModal() {
           {mode === 'prompt' ? (
             <label className="flex flex-col gap-1.5">
               <span className="text-sm font-medium text-foreground">
-                Prompt / Context
+                Istruzioni / Contesto
               </span>
               <textarea
                 value={prompt}
@@ -238,7 +238,7 @@ export function GenerateModal() {
 
           <fieldset className="flex flex-col gap-1.5">
             <legend className="text-sm font-medium text-foreground">
-              Output Length
+              Lunghezza output
             </legend>
             <div
               role="radiogroup"
@@ -321,7 +321,7 @@ export function GenerateModal() {
                 size="sm"
                 onClick={handleDiscard}
               >
-                Scarta
+                {isGenerating ? 'Annulla' : 'Scarta'}
               </Button>
               <Button
                 type="button"

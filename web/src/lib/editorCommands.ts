@@ -113,7 +113,44 @@ export const toggleListCommand = (view: EditorView): boolean => {
     }
   }
 
-  view.dispatch({ changes })
+  const changeSet = view.state.changes(changes)
+  // assoc 1: il cursore si posiziona DOPO il testo inserito, non prima
+  const selection = view.state.selection.map(changeSet, 1)
+  view.dispatch({ changes, selection })
+  view.focus()
+  return true
+}
+
+/**
+ * Lista numerata: aggiunge "1. ", "2. ", ... a ogni riga della selezione
+ * (numerazione sequenziale a partire da 1), oppure la rimuove dalle righe
+ * che già la hanno (toggle per riga).
+ */
+export const toggleOrderedListCommand = (view: EditorView): boolean => {
+  const { from, to } = view.state.selection.main
+  const startLine = view.state.doc.lineAt(from)
+  const endLine = view.state.doc.lineAt(to)
+
+  const changes: { from: number; to: number; insert: string }[] = []
+  let counter = 1
+  for (let n = startLine.number; n <= endLine.number; n++) {
+    const line = view.state.doc.line(n)
+    const match = line.text.match(/^(\s*)\d+\. /)
+    if (match) {
+      changes.push({
+        from: line.from + match[1].length,
+        to: line.from + match[0].length,
+        insert: '',
+      })
+    } else {
+      changes.push({ from: line.from, to: line.from, insert: `${counter}. ` })
+      counter += 1
+    }
+  }
+
+  const changeSet = view.state.changes(changes)
+  const selection = view.state.selection.map(changeSet, 1)
+  view.dispatch({ changes, selection })
   view.focus()
   return true
 }
