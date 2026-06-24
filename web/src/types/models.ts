@@ -1,8 +1,10 @@
 import type { components } from './api';
 
 
-//usato Facade design pattern per esporre solo i tipi reali del backend, nascondendo quelli generati da openapi-typescript
-// Esportazione centralizzata dei tipi reali del backend
+// Barrel di re-export dei tipi del contratto API.
+// Scopo: unico punto di import per i tipi delle richieste, così il resto
+// dell'app non dipende dalla struttura interna di api.ts (auto-generato da
+// openapi-typescript) e una sua rigenerazione si assorbe qui in un punto solo.
 export type GenerateRequest = components['schemas']['GenerateRequest'];
 export type LinkRequest = components['schemas']['LinkRequest'];
 export type TextRequest = components['schemas']['TextRequest'];

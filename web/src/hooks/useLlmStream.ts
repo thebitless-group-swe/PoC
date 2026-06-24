@@ -1,10 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { useEditorStore } from '@/store/useEditorStore'
 import { parseSseStream } from '@/lib/sse'
+import type { TextRequest } from '@/types/models'
 
 export type LlmStreamStatus = 'idle' | 'streaming' | 'done' | 'error'
 
-export type SummaryLength = 'breve' | 'medio' | 'dettagliato'
+// La lunghezza ammessa è quella definita dal contratto: un'unica fonte di verità.
+export type SummaryLength = TextRequest['length']
 
 const MIN_TEXT_LENGTH = 10
 const DEFAULT_LENGTH: SummaryLength = 'medio'
@@ -66,10 +68,15 @@ export function useLlmStream(
       actions.startStreaming()
 
       try {
+        // L'oggetto inviato è il contratto TextRequest: lo tipizziamo per avere
+        // il controllo a compile-time. Ordine delle chiavi { text, length }
+        // invariato per non cambiare l'output JSON.
+        const requestBody: TextRequest = { text, length }
+
         const response = await fetchImpl(SUMMARIZE_ENDPOINT, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, length }),
+          body: JSON.stringify(requestBody),
           signal: controller.signal,
         })
 
