@@ -49,7 +49,7 @@ export function TopBar({ noteTitle }: TopBarProps) {
   const showStreamingUi = isGenerating && aiModal === null
 
   // Titolo reattivo: prop esplicita > nota corrente > fallback.
-  const displayTitle = noteTitle ?? currentNote?.title ?? 'Untitled Note'
+  const displayTitle = noteTitle ?? currentNote?.title ?? 'Nota senza titolo'
 
   const openModal = (modal: 'summarize' | 'generate') => {
     useEditorStore.setState({

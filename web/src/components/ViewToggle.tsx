@@ -20,7 +20,7 @@ export function ViewToggle() {
         size="sm"
         onClick={() => setViewMode('split')}
       >
-        Split
+        Diviso
       </Button>
       <Button
         variant={viewMode === 'render' ? 'default' : 'ghost'}

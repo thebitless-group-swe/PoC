@@ -6,8 +6,10 @@ import {
   Italic,
   Link,
   List,
+  ListOrdered,
   Save,
 } from 'lucide-react'
+import { DropdownMenu } from 'radix-ui'
 
 import { Button } from '@/components/ui/button'
 import { useEditorStore } from '@/store/useEditorStore'
@@ -19,6 +21,7 @@ import {
   toggleItalicCommand,
   toggleLinkCommand,
   toggleListCommand,
+  toggleOrderedListCommand,
 } from '@/lib/editorCommands'
 
 type FormatTool = {
@@ -30,7 +33,6 @@ const formatTools: FormatTool[] = [
   { label: 'Grassetto', icon: Bold },
   { label: 'Corsivo', icon: Italic },
   { label: 'Titolo', icon: Heading },
-  { label: 'Lista', icon: List },
   { label: 'Link', icon: Link },
   { label: 'Immagine', icon: Image },
   { label: 'Codice', icon: Code },
@@ -53,9 +55,6 @@ export function EditorToolbar() {
       case 'Titolo':
         cycleHeadingCommand(view)
         break
-      case 'Lista':
-        toggleListCommand(view)
-        break
       case 'Link':
         toggleLinkCommand(view)
         break
@@ -69,6 +68,17 @@ export function EditorToolbar() {
         break
     }
   }
+
+  const handleList = (ordered: boolean) => {
+    const view = useEditorStore.getState().editorView
+    if (!view) return
+    if (ordered) {
+      toggleOrderedListCommand(view)
+    } else {
+      toggleListCommand(view)
+    }
+  }
+
   return (
     <div
       role="toolbar"
@@ -89,6 +99,42 @@ export function EditorToolbar() {
             <Icon aria-hidden="true" />
           </Button>
         ))}
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Elenco"
+              title="Elenco"
+            >
+              <List aria-hidden="true" />
+            </Button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="start"
+              className="z-50 min-w-[160px] rounded-md border border-border bg-popover p-1 shadow-md"
+            >
+              <DropdownMenu.Item
+                onSelect={() => handleList(false)}
+                className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground outline-none data-[highlighted]:bg-muted"
+              >
+                <List className="size-4" aria-hidden="true" />
+                Elenco puntato
+              </DropdownMenu.Item>
+             <DropdownMenu.Item
+                onSelect={() => handleList(true)}
+                className="flex items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-popover-foreground outline-none data-[highlighted]:bg-muted"
+              >
+                <ListOrdered className="size-4" aria-hidden="true" />
+                Elenco numerato
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+
       </div>
 
       <div className="ml-auto flex items-center gap-1">
@@ -99,7 +145,7 @@ export function EditorToolbar() {
           aria-label="Salva nota"
         >
           <Save aria-hidden="true" />
-          Save
+          Salva
         </Button>
       </div>
     </div>
